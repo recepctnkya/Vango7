@@ -1,0 +1,271 @@
+
+ONEMLI: Bu proje icin esp V5.3.0 versiyonunu kullaniyor
+
+
+
+SLAVE
+
+
+
+
+Digital giris 8
+sensor giris 8
+Digital cikis 32
+Pwm Dim 5
+1 adet RGB
+
+
+Important: Kesinlikle Gorsel aydinlatmalara donanimsal ve ekran anlaminda seksi calismalara onem verilecek.
+Important: hem canbus hem de modbus a gore yapiyi uyarla
+
+Slave larin Ozellikleri:
+
+MiniOne 8 outputs, 
+MiniTwo 16 outputs,
+MiniThree 24 outputs                                                                                                                   
+MidiOne    -8 outputs and 8 digital inputs                       
+MidiTwo,       -16 outputs and 8 digital inputs                                                            
+MidiThree    -24 inputs and 8 digital inputs
+PlusOne    -8 outputs and 8 digital inputs and 5 analog inputs and 5 Dimmable output and RGB output
+PlusTwo    -16 outputs and 8 digital inputs and 5 analog inputs and 5 Dimmable output and RGB output
+PlusThree  -24 outputs and 8 digital inputs and 5 analog inputs and 5 Dimmable output and RGB output
+
+
+
+
+Bluetooth uzerinden datalari mobile app e aktarma
+Ekran tasarimini sa
+
+                                                                                 
+
+
+Sonraki Implementasyonlar.
+-Ekran sayfalari tasarlanacak. (5 farkli tasarim olabilir.)
+-Modbus paket yapilari ekran fonksiyonlarina impelement edilecek
+
+
+
+
+
+Ana Özellikler ve Fonksiyonlar
+Aku Voltaji, Akım ve Güç
+Tarih ve Saat
+Ayarlanabilir Aydınlatmalar
+Mutfak: Mutfağın her köşesini aydınlatan ve ayarlanabilir enerji verimli LED ışıklar.
+Koridor: Gece güvenliği ve konforu için ayarlanabilir aydınlatma sağlar.
+Yatak Odası: Okuma ve dinlenme için ayarlanabilir ışık seviyeleri.
+Oturma Alanı: Geniş aydınlatma seçenekleri ile rahat bir ortam oluşturur.
+
+Aç Kapa Röle Kontrol
+Tuvalet Lambası: Tuvalet alanının aydınlatmasını kontrol eder.
+TV: Karavan içerisindeki televizyonun açılıp kapatılmasını sağlar.
+İç Priz: Karavan içerisindeki prizlerin enerjisini kontrol eder.
+Su Pompası: Su pompasının açılıp kapanmasını yönetir.
+USB: USB portlarının enerjisini kontrol eder.
+Okuma Lambası: Okuma lambalarının açma kapama işlemlerini yapar.
+Buzdolabı: Buzdolabının enerji tüketimini yönetir.
+Basamak: Karavanın basamağının açılmasını ve kapanmasını kontrol eder.
+Dış Priz: Dış mekan prizlerinin enerjisini yönetir.
+Dış Aydınlatma: Karavanın dışındaki aydınlatma sistemlerini kontrol eder.
+Ortam Isıtıcı: Karavanın iç ortamını ısıtan cihazların kontrolünü sağlar.
+Banyo Spot: Banyo alanının aydınlatmasını kontrol eder.
+
+Miktar Göstergeleri
+Temiz Su: Temiz su tankının doluluk seviyesini izler.
+Gri Su: Gri su tankının doluluk seviyesini izler.
+Kirli Su: Kirli su tankının doluluk seviyesini izler.
+İç Sıcaklık: Karavanın iç ortam sıcaklığını ölçer.
+Dış Sıcaklık: Karavanın dış ortam sıcaklığını ölçer.
+Nem: Karavan içindeki nem seviyesini izler.
+Basınç: İç ve dış ortam basınçlarını izler.
+
+Ayarlar
+Ekle Çıkar: Yeni cihazlar ekleme veya mevcut cihazları çıkarma işlemleri.
+İsimlendirme: Cihaz ve sistemlerin adlandırılmasını sağlar.
+Bluetooth Ayarlar ve Bağlantı: Bluetooth üzerinden cihaz eşleştirme ve bağlantı ayarları.
+Wi-Fi Ayarlar ve Bağlantı: Wi-Fi üzerinden cihaz eşleştirme ve bağlantı ayarları.
+Ekran Parlaklık Seviyesi: Kontrol paneli ekranının parlaklık seviyesini ayarlama.
+Tema: Kullanıcı arayüzü temalarının seçimi ve ayarlanması.
+Sensör Kalibrasyonu: Sistem sensörlerinin kalibrasyon işlemleri.
+
+Mobil Uygulama (APP)
+Android: Android işletim sistemli cihazlar için karavan kontrol uygulaması.
+iOS: iOS işletim sistemli cihazlar için karavan kontrol uygulaması.
+
+
+Ozellikler.
+Init
+    -memory den ekranda gosterilecek datalarin sayilari okunacak
+    -memory den ekranda gosterilecek verilerin isimleri gosterilecek
+    -Slave connectionlari check edilecek ve ekrana bagli olan slave turleri icon connected seklinde gosterilecek(Mobile app ta aynisi) belki ayri sayfa tasarimi
+    -Bluetooth baglantisi check edilecek (onceden bagli oldugu bluetooth a tekrar baglanacak)
+    
+
+-Modbus temel olarak io lari kontrol edip analog datalari yazacak
+-Datalari bluetoot a basacak bir yapi olustur.
+-Bluetooth tan gelen kontrol datalarini da alip ayni sekilde data gonderecek
+
+
+
+
+
+1. Aydınlatmalar (Lighting)
+    Ön Dolap (Front Cabinet)
+    Mutfak (Kitchen)
+    Zemin (Floor)
+    Arka Dolap (Rear Cabinet)
+    Dış Aydınlatma (Exterior Lighting)
+    Pop-up
+    Dimmer
+    RGB
+2. Buton (Buttons)
+    Sun and Cloud Icon
+    Toilet Icon
+    Water Drop Icon
+    Coffee Cup Icon
+    Fridge Icon
+    Stove Icon
+    Fish Icon
+3. Enstrüman (Instruments)
+    Temiz su/dış (Clean Water/Exterior)
+    Gri su/dış (Grey Water/Exterior)
+    Sıcaklık (Temperature)
+    Nem (Humidity)
+    Basınç (Pressure)
+4. Motor Kontrol (Motor Control)
+    Masa (Table)
+    Yatak (Bed)
+    TV
+    Tente (Awning)
+    Pop-up
+5. Okuma Lambası (Reading Lamp)
+    Lütfen Yazınız (Please Write)
+    Ayarla (Adjust/Settings)
+6. Additional Functionalities
+    Settings Icon (Bottom Left)
+    Home Icon
+    Wi-Fi/Signal Icon
+
+
+konfigurasyon hem mobile uygulamadan yapilacak hem de ekrandan yapilacak ve bu islem icin progres bar ve reset islemi olacak
+
+
+Kabaca yukaridaki basliklar ana menude bulunacak
+Android ve IOS arayuzu asagidaki linktekine benzer olacak
+https://www.fmkkaravanmalzemesi.com/urun/labobin-x-smart-akilli-karavan-kontrol-paneli
+
+
+
+
+App Ozellikleri
+-Tum data paketleri bluetooth uzerinden Telefona gonderilecek ve alinacak
+
+AnaSayfa
+-App anasayfa da veriler kontrol panelindeki gibi gosterilip outputlar kontrol edilebilecek.(Neredeyse ayni tasarim)
+-Sarj olma veya Akim harcama efektleri eklenecek(Buna henuz karar verilmedi. Batarya bilgileri gosterilecekse animasyon olmali.)
+Ayarlar 1.Sayfa
+-Yukaridaki Aydinlatma, Buton, enstruman, motor, okuma lambasi gibi basliklarda alt basliklar cikarilip eklenebilecek
+-Alt basliklarin isimleri degistirilebilcek
+Ayarlar 2.Sayfa 
+ Bluetooth baglanti ayarlari ve ekran parlaklik
+-Sensor kalibrasyonlari icin basit bir arayuz olacak (Sicaklik, Akim, Su seviye) Buna net bir karar verilmedi. Tartisilacak
+
+
+
+
+
+
+Yeni Tasarim Kompakt
+-5 Tane analog
+-Ayni Sayida DI
+-16 Tane DO
+
+
+
+New TODOS
+-Cihaz Performansi Optimize edilecek
+-Siyah ve beyaz ekran koruyucu eklenecek. 
+-Tema yapisi eklenecek.
+-Modbus Analog datalari eklenecek
+-Modbus DO ve DI eklenecek
+-DI ve DO assign algoritmasi eklenecek
+-Ekrana Module connections gosterilecek
+-Bluetooth Konusuna ayri bir baslik acilacak.
+-Kalibrasyon sayfasi olacak.
+-Rename ve icon selection ekleneceks
+
+-System uptime eklenecek
+-Notificaton task button eklenecek ve mobil uygulamadan task ataninca oraya isleyece
+-Hava durumu ve zamani bluetooth uzerinden eklenecek.
+
+
+notification types
+Water tank levels near empty/full (e.g., “Gray water at 90%”).
+Low battery or energy consumption issues.
+eger bir cikis acilmasini istemiyorsan bildirim gidecek.
+
+
+Outdoor temperature
+Humidity level
+Weather forecast for the day
+
+
+2 Ayri Receive Paketi olacak
+-Konfigurasyon paketleri
+-stream paketi(cikislar hava durumu notification time and date)
+
+
+
+En Yeni TODO
+-Ble konfigurasyon datalari alimi ve kaydetme yapisi eklenecek
+-Mobil uygulamada task tanimlanabilecek.
+-Mobil uygulamada task uzerinden notification verilebilecek
+-Ayni zamanda task ve notification ekranda da olusturulabilecek
+-Sistem optimizasyon yapilacak
+--Git ve Gerrit ogrenilecek
+-Paketler CAN haberlesmesi uzerinden gonderilecek.
+-Butonlara event eklenecek
+
+
+
+
+En yeni TODO
+-Mobil uygulamada task tanimlanabilecek
+-Mobil uygulamada task uzerinden notification verilebilecek
+-Ayni zamanda task ve notification ekranda da gosterilebilecek
+-Sistem optimizasyonu yapilacak
+-Git ve Gerrit ogrenilecek
+-CAN paket yapisina gecilecek.
+-Analog ve kalibrasyon page
+-Software Version dynamic hale getirilecek.
+
+
+Mobil uygulama Haberlesme Altyapisi
+-Ekrandan uygulamaya giden datalar
+    - Slave Connection Status, numOfOutputs, numofSensors, numofDims, RGBEnabled, Theme, Voltage, outputBuffer, SensorBuffer, DimsBuffer, RGB values
+
+-Mobil Uygulamadan ekrana gelen datalar.
+    - Time, Date, Weather, Location, OutputID and writeData, DimID and WriteData
+    - numofDims and Names, numofSensors and Sensors, numOfOutputs and Names, RGB, Theme
+    - NumOfRules and Rules Data, NumofNotifications, Notifications. 
+    
+
+Rules sayfasi
+-Cikisa bagla veya baglama
+-Sicaklik bir degeri gecince cikisi ac veya kapat
+-Su seviyeleri icin uyari ver
+-Zaman icin de bir degere ulasinca bir cikisi ac veya kapat.
+-Salih e json detaylari,icon ve rs485 ve modbus poll atilacak
+
+
+ONEMLI: C:\Users\nakau\esp\v5.3\esp-idf\examples\protocols\mqtt\custom_outbox\main  4.3B ekrana hazirladigim IO yaziliminin konumu.
+
+
+
+Uid leri kontrol et
+sensor indis ve datalarini netlestir ornegin aciksa
+Ekranlar ile canbus comm 
+listeye manuel isim ekleme
+nrf connect olunca cihaz reset atiyor
+
+https://www.youtube.com/watch?v=iSJ1nQbxsQA

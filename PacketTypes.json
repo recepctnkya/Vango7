@@ -1,0 +1,137 @@
+
+
+
+
+EKRANDAN MOBIL UYGULAMAYA GELEN STREAM DATASI (bu paket 800ms de bir stream edilecek)
+{
+  "slvConn": "Yes",
+  "numOfOutputs": 16, // max 16
+  "numOfDims": 4,  //max 4
+  "numOfSensors": 5, // max 5
+  "RGBEnabled": "yes",
+  "Theme": "White",
+  "volt": 12.5,
+  "outputsNameBuffer": [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],//Asagida aciklama var
+  "DimsNameBuffer": [1,1,1,1],//Asagida aciklama var
+  "SensorsEnabledBuffer": [1,1,1,1,1],//sadece 1 ve 0 degeri alabilir
+  "outputsDataBuffer": [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1], // sadece 1 ve 0 degeri alabilir
+  "DimsDataBuffer": [1,1,1,1], // 100 e kadar deger alabilir.
+  "SensorsDataBuffer": [1,1,1,1,1],//ilk 3 data 100 e kadar deger alabilir(Su seviyeleri yuzde degeri) son 2 deger sicaklik degeridir.
+  "RGBDataBuffer": [255,255,255] // her biri 0-255 arasinda deger alabilir.
+}
+
+
+outputsNameBuffer:
+LAMP
+TOILET
+KITCHEN
+BEDROOM
+CORRIDOR
+STEP
+AC
+USB
+REGRIGE.
+WATER P.
+OUTLET
+OVEN
+TV
+EX. LIGHT
+EX. OUTLE
+HEATER
+SPOT
+READING L.
+
+
+DimsNameBuffer:
+LAMP
+TOILET
+KITCHEN
+BEDROOM
+CORRIDOR
+STEP
+EX. LIGHT
+SPOT
+
+MOBIL UYGULAMADAN EKRANA GELEN READ DATASI (bu paket 1 dakikada 1 gonderilecek )
+{
+  "MessageType": "Read",
+  "Time": "12:24",//
+  "Date": "11/01/25",
+  "Weather": "Cloudy",//Aciklama asagida var
+  "Temperature":"33",
+  "Location": "Istanbul"
+}
+
+
+Weather:
+Sunny         
+P. Cloudy  
+Thunder       
+Rainy         
+Snowy         
+Cloudy 
+
+
+
+MOBIL UYGULAMADAN EKRANA GELEN WRITE DATASI (bu paket ekranda cikislar veya dimler degistirildiginde gonderilecek. event based)
+{
+  "MessageType": "Write",
+  "writeDataType": "Dim",//Aciklama asagida var
+  "writeNo": 2,
+  "writeData": 50
+}
+
+
+writeDataType:
+Dim
+Output
+RGB
+
+Eger DIM ise writeNo 1-4 arasinda deger alabilir. ve writeData 0-100 arasinda deger alabilir.
+Eger Output ise writeNo 1-16 arasinda deger alabilir. ve writeData 0-1 arasinda deger alabilir.
+Eger RGB ise writeNo 1 olur ve writeData Buffer[3] seklinde olur ve 0-255 arasinda deger alabilir.
+
+
+MOBIL UYGULAMADAN EKRANA GELEN CONFIGURATION DATASI  (bu paket panel ayarlari sayfasinda ayarlar kayit yapildiginda gonderilecek. event based)
+{
+  "MessageType": "Configuration",
+  "numOfOutputs": 7,
+  "OutputsNameBuffer": [8, 10, 6, 4, 13, 15, 6, 4, 1, 2, 6, 4, 1, 2, 6, 4],
+  "numOfDims": 4,
+  "DimsNameBuffer": [1, 2, 3, 4],
+  "numOfSensors": 5,
+  "SensorsNameBuffer": [1, 1, 1, 1, 1],
+  "RGBEnables": "Yes",
+  "Theme": "black"
+}
+
+MOBIL UYGULAMADAN EKRANA GELEN RULES DATASI (bu paket 20 saniyede bir gonderilecek )
+{
+  "MessageType": "Rules",
+  "NumOfRules": 10,
+  "Rules": {
+    "r1": "Enable Output1 if temperature < 30",
+    "r2": "Notify if Gray water level below 30%",
+    "r3": "Disable Output2 after 5 mins",
+    "r4": "Notify if temperature above > 40",
+    "r5": "Enable Output1 if temperature < 30"
+  },
+  "NumOfNotifications": 2,
+  "Notifications": {
+    "n1": "Temperature low",
+    "n2": "Gray water level low"
+  }
+}
+
+
+
+
+
+
+
+
+
+{"MessageType":"Read","Time":"12:24","Date":"11/01/25","Weather":"Snowy","Temperature":"33","Location":"Istanbul"}
+{"MessageType": "Write","writeDataType": "Dim","writeNo": 5,"writeData": 356}
+{"MessageType": "Configuration","numOfOutputs": 9,"OutputsNameBuffer": [3, 16, 6, 2, 13, 15, 17, 7, 9, 2, 6, 4, 1, 2, 6, 4],"numOfDims": 2,"DimsNameBuffer": [1, 2, 3, 4],"numOfSensors": 5,"SensorsNameBuffer": [1, 1, 1, 1, 1],"RGBEnables": "Yes","Theme": "black"}
+{"MessageType": "Rules","NumOfRules": 10,"Rules": {"r1": "Enable Output1 if temperature < 30","r2": "Notify if Gray water level below 30%","r3": "Disable Output2 after 5 mins","r4": "Notify if temperature above > 40","r5": "Enable Output1 if temperature < 30"},"NumOfNotifications": 2,"Notifications": {"n1": "Temperature low","n2": "Gray water level low"}}
