@@ -17,11 +17,11 @@ dependencies:
       type: idf
     version: 5.3.0
   lvgl/lvgl:
-    component_hash: null
+    component_hash: 948bff879a345149b83065535bbc4a026ce9f47498a22881e432a264b9098015
     source:
-      path: C:\Users\nakau\Desktop\lvgl_Porting\components\lvgl__lvgl
-      type: local
+      service_url: https://api.components.espressif.com/
+      type: service
     version: 8.3.11
-manifest_hash: 42c359a498f4f2efee191ab8285dcc1dd83d1eff617f950dfe7ca9fe78e5e69e
+manifest_hash: a85a71a6e159e089e9d5fb8c5d4cbc7daf44ce9d07b8368973938daf78c1f971
 target: esp32s3
 version: 1.0.0

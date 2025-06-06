@@ -269,3 +269,24 @@ listeye manuel isim ekleme
 nrf connect olunca cihaz reset atiyor
 
 https://www.youtube.com/watch?v=iSJ1nQbxsQA
+
+
+
+
+Ekran konfigurasyonlari otomatik uygulanirsa guzel olur.
+
+
+salihin
+wifi sifre
+CCMFRJC8QK
+
+Zyxel_C0C1
+
+
+
+TODO:
+-Can Rx ve Tx paketlerini belirle
+-Mobil uygulama kontrol paketini implement et.
+-Kayma olayini coz.
+-Analog kalibrasyon safyasi ekle.
+-Sicaklik sensorlerini devreye al.

@@ -529,7 +529,7 @@ void ui_scrPanelSettings_screen_init(void)
     lv_obj_set_align(ui_Panel10, LV_ALIGN_CENTER);
     lv_obj_clear_flag(ui_Panel10, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
     lv_obj_set_style_radius(ui_Panel10, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_color(ui_Panel10, lv_color_hex(0x5A595A), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(ui_Panel10, lv_color_hex(0x006592), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_opa(ui_Panel10, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_Button5 = lv_btn_create(ui_Panel10);
@@ -543,6 +543,10 @@ void ui_scrPanelSettings_screen_init(void)
     lv_obj_set_style_radius(ui_Button5, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_color(ui_Button5, lv_color_hex(0x00AAF6), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_opa(ui_Button5, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_outline_color(ui_Button5, lv_color_hex(0x00B0FF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_outline_opa(ui_Button5, 40, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_outline_width(ui_Button5, 10, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_outline_pad(ui_Button5, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_lblLock4 = lv_label_create(ui_Button5);
     lv_obj_set_width(ui_lblLock4, LV_SIZE_CONTENT);   /// 1
@@ -566,6 +570,10 @@ void ui_scrPanelSettings_screen_init(void)
     lv_obj_set_style_radius(ui_Button3, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_color(ui_Button3, lv_color_hex(0x00AAF6), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_opa(ui_Button3, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_outline_color(ui_Button3, lv_color_hex(0x00B0FF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_outline_opa(ui_Button3, 40, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_outline_width(ui_Button3, 10, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_outline_pad(ui_Button3, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_lblSettings2 = lv_label_create(ui_Button3);
     lv_obj_set_width(ui_lblSettings2, LV_SIZE_CONTENT);   /// 1

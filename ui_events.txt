@@ -50,13 +50,31 @@ void btnSaveThemeFunc(lv_event_t * e)
 
 void changeColorWheel(lv_event_t * e)
 {
-	color_wheel_event_cb();
+	
 }
 
 void applyRGBColor(lv_event_t * e)
 {
+	color_wheel_event_cb();
+}
+
+void enRGBSetWhiteFunc(lv_event_t * e)
+{
 
 }
+
+void enRGBTurnONFunc(lv_event_t * e)
+{
+	set_RGBTurnONOFF(1);
+	set_rgb_to_white();
+}
+
+void enRGBTurnOFFFunc(lv_event_t * e)
+{
+	set_RGBTurnONOFF(0);
+	set_rgb_to_white();
+}
+
 
 
 

@@ -231,10 +231,11 @@ lv_obj_t * ui_Button11;
 lv_obj_t * ui_lblLock6;
 void ui_event_Colorwheel1(lv_event_t * e);
 lv_obj_t * ui_Colorwheel1;
-lv_obj_t * ui_lblRGB;
 void ui_event_btnRGBApply(lv_event_t * e);
 lv_obj_t * ui_btnRGBApply;
 lv_obj_t * ui_Label5;
+void ui_event_swRGBTurnON(lv_event_t * e);
+lv_obj_t * ui_swRGBTurnON;
 // CUSTOM VARIABLES
 
 
@@ -989,6 +990,24 @@ void ui_event_btnRGBApply(lv_event_t * e)
 
     if(event_code == LV_EVENT_CLICKED) {
         applyRGBColor(e);
+    }
+}
+
+void ui_event_swRGBTurnON(lv_event_t * e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+    lv_obj_t * target = lv_event_get_target(e);
+
+    if(event_code == LV_EVENT_VALUE_CHANGED &&  lv_obj_has_state(target, LV_STATE_CHECKED)) {
+        _ui_flag_modify(ui_Colorwheel1, LV_OBJ_FLAG_HIDDEN, _UI_MODIFY_FLAG_REMOVE);
+        _ui_flag_modify(ui_btnRGBApply, LV_OBJ_FLAG_CLICKABLE, _UI_MODIFY_FLAG_ADD);
+        enRGBSetWhiteFunc(e);
+        enRGBTurnONFunc(e);
+    }
+    if(event_code == LV_EVENT_VALUE_CHANGED &&  !lv_obj_has_state(target, LV_STATE_CHECKED)) {
+        _ui_flag_modify(ui_Colorwheel1, LV_OBJ_FLAG_HIDDEN, _UI_MODIFY_FLAG_ADD);
+        _ui_flag_modify(ui_btnRGBApply, LV_OBJ_FLAG_CLICKABLE, _UI_MODIFY_FLAG_REMOVE);
+        enRGBTurnOFFFunc(e);
     }
 }
 

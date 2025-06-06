@@ -232,10 +232,11 @@ extern lv_obj_t * ui_Button11;
 extern lv_obj_t * ui_lblLock6;
 void ui_event_Colorwheel1(lv_event_t * e);
 extern lv_obj_t * ui_Colorwheel1;
-extern lv_obj_t * ui_lblRGB;
 void ui_event_btnRGBApply(lv_event_t * e);
 extern lv_obj_t * ui_btnRGBApply;
 extern lv_obj_t * ui_Label5;
+void ui_event_swRGBTurnON(lv_event_t * e);
+extern lv_obj_t * ui_swRGBTurnON;
 // CUSTOM VARIABLES
 
 // SCREEN: ui_scrInit

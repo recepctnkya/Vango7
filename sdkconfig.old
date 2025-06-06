@@ -2382,7 +2382,7 @@ CONFIG_LV_COLOR_DEPTH_16=y
 # CONFIG_LV_COLOR_DEPTH_1 is not set
 CONFIG_LV_COLOR_DEPTH=16
 # CONFIG_LV_COLOR_16_SWAP is not set
-# CONFIG_LV_COLOR_SCREEN_TRANSP is not set
+CONFIG_LV_COLOR_SCREEN_TRANSP=y
 CONFIG_LV_COLOR_MIX_ROUND_OFS=128
 CONFIG_LV_COLOR_CHROMA_KEY_HEX=0x00FF00
 # end of Color settings
@@ -2646,7 +2646,7 @@ CONFIG_LV_USE_GRID=y
 # CONFIG_LV_USE_QRCODE is not set
 # CONFIG_LV_USE_FREETYPE is not set
 # CONFIG_LV_USE_TINY_TTF is not set
-CONFIG_LV_USE_RLOTTIE=y
+# CONFIG_LV_USE_RLOTTIE is not set
 # CONFIG_LV_USE_FFMPEG is not set
 # end of 3rd Party Libraries
 
@@ -2697,6 +2697,116 @@ CONFIG_ESP_LCD_TOUCH_MAX_BUTTONS=1
 # ESP LCD TOUCH
 #
 # end of ESP LCD TOUCH
+
+#
+# LVGL configuration
+#
+
+#
+# Color settings
+#
+# end of Color settings
+
+#
+# Memory settings
+#
+# end of Memory settings
+
+#
+# HAL Settings
+#
+# end of HAL Settings
+
+#
+# Feature configuration
+#
+
+#
+# Drawing
+#
+# end of Drawing
+
+#
+# GPU
+#
+# end of GPU
+
+#
+# Logging
+#
+# end of Logging
+
+#
+# Asserts
+#
+# end of Asserts
+
+#
+# Others
+#
+# end of Others
+
+#
+# Compiler settings
+#
+# end of Compiler settings
+# end of Feature configuration
+
+#
+# Font usage
+#
+
+#
+# Enable built-in fonts
+#
+# end of Enable built-in fonts
+# end of Font usage
+
+#
+# Text Settings
+#
+# end of Text Settings
+
+#
+# Widget usage
+#
+# end of Widget usage
+
+#
+# Extra Widgets
+#
+# end of Extra Widgets
+
+#
+# Themes
+#
+# end of Themes
+
+#
+# Layouts
+#
+# end of Layouts
+
+#
+# 3rd Party Libraries
+#
+# end of 3rd Party Libraries
+
+#
+# Others
+#
+# end of Others
+
+#
+# Examples
+#
+# end of Examples
+
+#
+# Demos
+#
+# end of Demos
+# end of LVGL configuration
 # end of Component config
 
 CONFIG_IDF_EXPERIMENTAL_FEATURES=y

@@ -24,7 +24,7 @@ static bool driver_installed = false;
 
 static const twai_timing_config_t t_config = TWAI_TIMING_CONFIG_500KBITS();
 static const twai_filter_config_t f_config = TWAI_FILTER_CONFIG_ACCEPT_ALL();
-static const twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT(TX_GPIO_NUM, RX_GPIO_NUM, TWAI_MODE_LISTEN_ONLY);
+static const twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT(TX_GPIO_NUM, RX_GPIO_NUM, TWAI_MODE_NO_ACK);
 
 
 
@@ -42,6 +42,7 @@ uint16_t inputs = 0;
 uint8_t analog_inputs[5] = {0};
 uint8_t dimmable_outputs[4] = {0};
 uint8_t rgb_values[3] = {0};
+uint8_t rgb_enabled = 0; // RGB'nin aktif olup olmadığını tutar
 uint8_t canbusConnection = 0;
 
 
@@ -79,9 +80,12 @@ uint8_t get_rgb_value(uint8_t index) {
     return 0;  // Hatalı index
 }
 
+
 uint8_t get_canbus_connection_status() {
     return canbusConnection;
 }
+
+
 
 // Function to send a CAN frame
 void send_can_frame(uint32_t id, uint8_t *data) {
@@ -109,21 +113,18 @@ void handle_rx_message(twai_message_t message) {
             break;
         case FRAME_2_ID:
             // Assign to global arrays
-            for (int i = 0; i < 5; i++) {
+            for (int i = 0; i < 4; i++) {
                 analog_inputs[i] = message.data[i];
-                
+                // Assign to global RGB array
+                dimmable_outputs[i] = message.data[i + 4];
+
             }
 
             break;
         case FRAME_3_ID:
-            // Assign to global RGB array
-            dimmable_outputs[0] = message.data[0];
-            dimmable_outputs[1] = message.data[1];
-            dimmable_outputs[2] = message.data[2];
-            dimmable_outputs[3] = message.data[3];
-            rgb_values[0] = message.data[4];
-            rgb_values[1] = message.data[5];
-            rgb_values[2] = message.data[6];
+            // rgb_values[0] = message.data[0];
+            // rgb_values[1] = message.data[1];
+            // rgb_values[2] = message.data[2];
             break;
         default:
             break;
@@ -154,7 +155,7 @@ void twai_task(void *pvParameter)
             //ESP_LOGI(EXAMPLE_TAG,"Alert: TWAI controller has become error passive.");
         }
         if (alerts_triggered & TWAI_ALERT_BUS_ERROR) {
-            //ESP_LOGI(EXAMPLE_TAG,"Alert: A (Bit, Stuff, CRC, Form, ACK) error has occurred on the bus.");
+           // ESP_LOGI(EXAMPLE_TAG,"Alert: A (Bit, Stuff, CRC, Form, ACK) error has occurred on the bus.");
             //ESP_LOGI(EXAMPLE_TAG,"Bus error count: %"PRIu32, twaistatus.bus_error_count);
         }
 
@@ -171,6 +172,7 @@ void twai_task(void *pvParameter)
             
             if (twai_receive(&message, 0) == ESP_OK) {
                 handle_rx_message(message);
+                
                 canbusConnection = 1;
             }
         }

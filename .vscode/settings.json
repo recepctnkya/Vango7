@@ -35,5 +35,6 @@
         "array": "c",
         "vector": "c",
         "xstring": "c"
-    }
+    },
+    "a-file-icon-vscode.arrowTheme": "material"
 }

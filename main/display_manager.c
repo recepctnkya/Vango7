@@ -132,17 +132,17 @@ extern lv_obj_t *ui_btnRGBColor;
 extern lv_obj_t *ui_brInit;
 extern lv_obj_t *ui_Label1;
 
-extern lv_obj_t* ui_img_lamp_png;
-extern lv_obj_t* ui_img_water_png;
-extern lv_obj_t* ui_img_outlet_png;
-extern lv_obj_t* ui_img_oven_png;
-extern lv_obj_t* ui_img_tv_png;
-extern lv_obj_t* ui_img_refrigerator_png;
-extern lv_obj_t* ui_img_toilet_png;
-extern lv_obj_t* ui_img_usb_png;
-extern lv_obj_t* ui_img_ac_png;
-extern lv_obj_t* ui_img_readinglamp_png;
-extern lv_obj_t* ui_img_heater_png;
+extern const lv_img_dsc_t ui_img_lamp_png;
+extern const lv_img_dsc_t ui_img_water_png;
+extern const lv_img_dsc_t ui_img_outlet_png;
+extern const lv_img_dsc_t ui_img_oven_png;
+extern const lv_img_dsc_t ui_img_tv_png;
+extern const lv_img_dsc_t ui_img_refrigerator_png;
+extern const lv_img_dsc_t ui_img_toilet_png;
+extern const lv_img_dsc_t ui_img_usb_png;
+extern const lv_img_dsc_t ui_img_ac_png;
+extern const lv_img_dsc_t ui_img_readinglamp_png;
+extern const lv_img_dsc_t ui_img_heater_png;
 
 
 // Slave ID 
@@ -316,6 +316,7 @@ int sensorsBuffer[5] = {0};
 int dimsBuffer[4] = {0};
 int rgbBuffer[3] = {0};
 int btn_index = 0;
+uint8_t rgbEna = 0; // RGB LED enable variable
 
 int panelWallpaperEnableCounter = 1;
 
@@ -671,12 +672,44 @@ void set_sensor_panels_coordinates(int numOfSensors, int sensorsBuffer[5]) {
 
 // Function to toggle button color based on regs_data
 void button_events(lv_event_t* e) {
+
+    int8_t val = 0;
+    uint8_t can_data[8] = {0}; // CAN verisi için buffer
     lv_obj_t* btn = lv_event_get_target(e);
     btn_index = (int)lv_event_get_user_data(e);
-    toggle_regs_data(btn_index + OUTPUT_1_INDIS);
-    ESP_LOGI(TAG, "Button index: %d", btn_index);
+    int16_t outpts = get_outputs();
+
+    // Check the bit at btn_index
+    if (((outpts >> btn_index) & 0x01) == 1) {
+        val = 0; // If bit is 1, set val to 0
+    } else {
+        val = 1; // If bit is 0, set val to 1
+    }
+    
+    can_data[0] = btn_index;  // İlk byte veri
+    can_data[1] = val;  // İlk byte veri
+    send_can_frame(0x720, can_data);  // Output için CAN ID: 0x720
+    ESP_LOGI(TAG, "Button index: %d val: %d", btn_index, val);
 }
 
+// Function to toggle dimmer value based on current value
+void dim_events(lv_event_t* e) {
+    uint8_t can_data[8] = {0}; // CAN data buffer
+    lv_obj_t* slider = lv_event_get_target(e);
+    int dim_index = (int)lv_event_get_user_data(e);
+
+    // Get the new value from the slider
+    int16_t dim_value = lv_slider_get_value(slider);
+
+    // Prepare CAN data: [index, value]
+    can_data[0] = dim_index;
+    can_data[1] = dim_value;
+
+    // Send CAN frame for dimmer (example CAN ID: 0x730)
+    send_can_frame(0x730, can_data);
+
+    ESP_LOGI(TAG, "Dimmer index: %d, value: %d", dim_index, dim_value);
+}
 // Function to create the UI dynamically based on numOfOutputs
 void create_dynamic_ui(lv_obj_t* parent) {
 
@@ -778,6 +811,8 @@ void create_dynamic_ui(lv_obj_t* parent) {
         lv_obj_set_style_pad_right(sldDims[i], 15, LV_PART_KNOB | LV_STATE_PRESSED);
         lv_obj_set_style_pad_top(sldDims[i], 15, LV_PART_KNOB | LV_STATE_PRESSED);
         lv_obj_set_style_pad_bottom(sldDims[i], 15, LV_PART_KNOB | LV_STATE_PRESSED);
+
+        lv_obj_add_event_cb(sldDims[i], dim_events, LV_EVENT_RELEASED, (void*)i);
 
         // Create the label
         lblDims[i] = lv_label_create(ui_pnlSensors);
@@ -916,6 +951,17 @@ void set_bluetooth_icon(bool connected) {
 }
 
 
+void set_RGBTurnONOFF(int val)
+{
+    if(val == 1) {
+        rgbEna = 1;
+    }
+    else if(val == 0) {
+        rgbEna = 0;
+    }
+}
+
+
 int initBarCounter = 0;
 int initCounter = 0;
 int scrMode = 0;
@@ -1041,11 +1087,13 @@ void update_display_with_data(const uint8_t *data, int length) {
     lv_arc_set_value(ui_arcGrup2, analog_input_2);
     lv_arc_set_value(ui_arcGrup3, analog_input_3);
 
+    
 
     // Check Modbus connection status and update device image
     //bool Deviceconnected = get_modbus_connection_status();
     bool Deviceconnected = get_canbus_connection_status();
     set_device_image(Deviceconnected);
+    //if (Deviceconnected) apply_rgb_data_to_wheel(get_rgb_value(0), get_rgb_value(1), get_rgb_value(2));
 
     bool btConnected = get_connection_status();
     set_bluetooth_icon(btConnected);
@@ -1078,7 +1126,7 @@ void update_display_with_data(const uint8_t *data, int length) {
             set_button_color(btnIO[i], (get_outputs() >> i)&0x01, Deviceconnected);
         }
         for (int i = 0; i < numOfDims; i++) {
-            lv_slider_set_value(sldDims[i], get_dimmable_output(i), LV_ANIM_OFF);
+            //lv_slider_set_value(sldDims[i], get_dimmable_output(i), LV_ANIM_OFF);
         }
     }
     ui_initialized++;
@@ -1123,14 +1171,14 @@ char* create_json_data_packet(const uint16_t* regs_data, int numOfOutputs, int n
     // Fetch outputsBuffer from regs_data
     int buf[16];
     for (int i = 0; i < numOfOutputs; i++) {
-        buf[i] = regs_data[OUTPUT_1_INDIS + i];
+        buf[i] = get_outputs() >> i & 0x01; // Get the output state from the bitmask
     }
     cJSON *outputs = cJSON_CreateIntArray(buf, numOfOutputs);
     cJSON_AddItemToObject(json, "outputsDataBuffer", outputs);
 
     // Fetch dimsBuffer from regs_data
     for (int i = 0; i < numOfDims; i++) {
-        buf[i] = regs_data[DIMMABLE_OUTPUT_1_INDIS + i];
+        buf[i] = get_dimmable_output(i);
     }
     cJSON *dims = cJSON_CreateIntArray(buf, numOfDims);
     cJSON_AddItemToObject(json, "DimsDataBuffer", dims);
@@ -1138,15 +1186,22 @@ char* create_json_data_packet(const uint16_t* regs_data, int numOfOutputs, int n
 
     // Fetch sensorsBuffer from regs_data
     for (int i = 0; i < numOfSensors; i++) {
-        buf[i] = regs_data[ANALOG_INPUT_1_INDIS + i];
+        buf[i] = get_analog_input(i);
     }
     cJSON *sensors = cJSON_CreateIntArray(buf, numOfSensors);
     cJSON_AddItemToObject(json, "SensorsDataBuffer", sensors);
 
 
+    rgbBuffer[0] = get_rgb_value(0);
+    rgbBuffer[1] = get_rgb_value(1);
+    rgbBuffer[2] = get_rgb_value(2);
+    ESP_LOGI(TAG, "RGB Values: %d, %d, %d", get_rgb_value(0), get_rgb_value(1), get_rgb_value(2));
     // Add rgbBuffer to the JSON object
     cJSON *rgb = cJSON_CreateIntArray(rgbBuffer, 3);
     cJSON_AddItemToObject(json, "RGBDataBuffer", rgb);
+    
+
+
 
 
     // Convert JSON object to string
@@ -1300,13 +1355,15 @@ void parse_write_data(cJSON* json) {
         if (strcmp(writeDataType->valuestring, "Output") == 0) {
             if (writeData && cJSON_IsNumber(writeData)) {
                 ESP_LOGI("PARSE_WRITE_DATA", "Output Value: %d", writeData->valueint);
-                can_data[0] = (uint8_t)writeData->valueint;  // İlk byte veri
+                can_data[0] = (uint8_t)writeNo->valueint;  // İlk byte veri
+                can_data[1] = (uint8_t)writeData->valueint;  // İlk byte veri
                 send_can_frame(0x720, can_data);  // Output için CAN ID: 0x720
             }
         } else if (strcmp(writeDataType->valuestring, "Dim") == 0) {
             if (writeData && cJSON_IsNumber(writeData)) {
                 ESP_LOGI("PARSE_WRITE_DATA", "Dim Value: %d", writeData->valueint);
-                can_data[0] = (uint8_t)writeData->valueint;  // İlk byte veri
+                can_data[0] = (uint8_t)writeNo->valueint;  // İlk byte veri
+                can_data[1] = (uint8_t)writeData->valueint;  // İlk byte veri
                 send_can_frame(0x730, can_data);  // Dim için CAN ID: 0x730
             }
         } else if (strcmp(writeDataType->valuestring, "RGB") == 0) {
@@ -1326,6 +1383,16 @@ void parse_write_data(cJSON* json) {
     }
 }
 
+void set_rgb_to_white() {
+    uint8_t can_data[8] = {0}; // CAN verisi için buffer
+    // Set RGB values to white
+    can_data[0] = 255; // Red
+    can_data[1] = 255; // Green
+    can_data[2] = 255; // Blue
+    can_data[3] = rgbEna;   // Unused byte
+    send_can_frame(0x740, can_data);  // RGB için CAN ID: 0x740
+}
+
 
 // Function to parse Configuration data
 void parse_configuration_data(cJSON* json) {
@@ -1335,7 +1402,7 @@ void parse_configuration_data(cJSON* json) {
     cJSON* dimsNameBuffer = cJSON_GetObjectItem(json, "DimsNameBuffer");
     cJSON* numOfSensors = cJSON_GetObjectItem(json, "numOfSensors");
     cJSON* sensorsNameBuffer = cJSON_GetObjectItem(json, "SensorsNameBuffer");
-    cJSON* rgbEnabled = cJSON_GetObjectItem(json, "RGBEnables");
+    cJSON* rgbEnabled = cJSON_GetObjectItem(json, "RGBEnabled");
     cJSON* theme = cJSON_GetObjectItem(json, "Theme");
 
     int outputsBuf[16] = {0};
@@ -1749,9 +1816,40 @@ void apply_theme_settings()
 
 // Callback function for color changes
  void color_wheel_event_cb() {
+    uint8_t can_data[8] = {0}; // CAN verisi için buffer
     lv_color_t selected_color = lv_colorwheel_get_rgb(ui_Colorwheel1); // Get selected color
     // Apply selected color to the panel background
     lv_obj_set_style_bg_color(ui_btnRGBColor, selected_color, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(ui_btnRGBApply, selected_color, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    lv_color32_t color32;
+    
+    color32.full = lv_color_to32(selected_color);
+
+    uint8_t r = color32.ch.red;
+    uint8_t g = color32.ch.green;
+    uint8_t b = color32.ch.blue;
+
+    can_data[0] = r;  // İlk byte veri
+    can_data[1] = g;  // İlk byte veri
+    can_data[2] = b;  // İlk byte veri
+    can_data[3] = rgbEna;
+    send_can_frame(0x740, can_data);  // RGB için CAN ID: 0x740
+    
+}
+
+// Callback function for color changes
+ void apply_rgb_data_to_wheel(uint8_t r, uint8_t g, uint8_t b) {
+
+    lv_color_t new_color = lv_color_make(r, g, b);
+    // Apply selected color to the panel background
+    lv_obj_set_style_bg_color(ui_btnRGBColor, new_color, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(ui_btnRGBApply, new_color, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_colorwheel_set_rgb(ui_Colorwheel1, new_color);
+
+    //lv_colorwheel_set_rgb(ui_Colorwheel1, lv_color_make(255, 0, 0)); // Set to red
+
+    
 }
 //######################################################################################################################
 
@@ -1839,8 +1937,11 @@ void display_manager_init() {
     ESP_ERROR_CHECK(esp_lcd_rgb_panel_register_event_callbacks(panel_handle, &cbs, &disp_drv));
 
     ESP_LOGI(TAG, "Initialize RGB LCD panel");
+    
     ESP_ERROR_CHECK(esp_lcd_panel_reset(panel_handle));
+    vTaskDelay(pdMS_TO_TICKS(200));
     ESP_ERROR_CHECK(esp_lcd_panel_init(panel_handle));
+    vTaskDelay(pdMS_TO_TICKS(200));
 
 #if EXAMPLE_PIN_NUM_BK_LIGHT >= 0
     ESP_LOGI(TAG, "Turn on LCD backlight");

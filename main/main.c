@@ -47,7 +47,7 @@ void app_main(void)
         ret = nvs_flash_init();
     }
     ESP_ERROR_CHECK(ret);
-
+    vTaskDelay(pdMS_TO_TICKS(200));
     display_manager_init(); // Display manager'ı başlat
     ble_init();
     wifi_ini();

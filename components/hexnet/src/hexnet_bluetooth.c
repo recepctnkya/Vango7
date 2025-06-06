@@ -312,7 +312,7 @@ void bluetooth_send_periodic_callback(TimerHandle_t xTimer)
 {
     
     if (is_connected) {
-        if (StartSendcounter > 6){
+        if (StartSendcounter > 10){
             // Sending BLE notification
             esp_ble_gatts_send_indicate(spp_gatts_if, spp_conn_id, spp_handle_table[SPP_IDX_SPP_DATA_NTY_VAL], strlen(converted_json_data2), (uint8_t *)converted_json_data2, false);
         }
