@@ -499,7 +499,7 @@ void ui_scrMain_screen_init(void)
     lv_obj_set_align(ui_btnRGBColor, LV_ALIGN_CENTER);
     lv_obj_add_flag(ui_btnRGBColor, LV_OBJ_FLAG_SCROLL_ON_FOCUS);     /// Flags
     lv_obj_clear_flag(ui_btnRGBColor, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
-    lv_obj_set_style_bg_color(ui_btnRGBColor, lv_color_hex(0x00AAF6), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(ui_btnRGBColor, lv_color_hex(0x5A5A5A), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_opa(ui_btnRGBColor, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_outline_color(ui_btnRGBColor, lv_color_hex(0x00B0FF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_outline_opa(ui_btnRGBColor, 40, LV_PART_MAIN | LV_STATE_DEFAULT);

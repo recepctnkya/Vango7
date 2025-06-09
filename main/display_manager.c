@@ -7,6 +7,7 @@
 #include "hexnet_bluetooth.h"
 #include "hexnet_nvs.h"
 #include "hexnet_canbus.h"
+#include "settings_page.h"
 
 #include <stdio.h>
 #include "string.h"
@@ -26,6 +27,7 @@
 
 #include "driver/i2c.h" 
 #include "esp_lcd_touch_gt911.h"
+#include "esp_system.h"
 
 
 
@@ -269,7 +271,7 @@ extern const lv_img_dsc_t ui_img_heater_png;
 #endif // CONFIG_EXAMPLE_DOUBLE_FB
 
 #define EXAMPLE_LVGL_TICK_PERIOD_MS    2
-#define EXAMPLE_LVGL_TASK_MAX_DELAY_MS 500
+#define EXAMPLE_LVGL_TASK_MAX_DELAY_MS 1000//DEFAULT 500 du sadece denemek icin 1000 yaptim eger iyi degilse tekrar 500 yap
 #define EXAMPLE_LVGL_TASK_MIN_DELAY_MS 1
 #define EXAMPLE_LVGL_TASK_STACK_SIZE   (8 * 1024)
 #define EXAMPLE_LVGL_TASK_PRIORITY     2
@@ -953,10 +955,12 @@ void set_bluetooth_icon(bool connected) {
 
 void set_RGBTurnONOFF(int val)
 {
+    lv_color_t new_color = lv_color_make(0x5A, 0x5A, 0x5A);
     if(val == 1) {
         rgbEna = 1;
     }
     else if(val == 0) {
+        lv_obj_set_style_bg_color(ui_btnRGBColor, new_color, LV_PART_MAIN | LV_STATE_DEFAULT);
         rgbEna = 0;
     }
 }
@@ -974,7 +978,7 @@ static void init_timer(lv_timer_t * timer) {
 
 // Timer callback function
 static void timer_updateTimer_callback(lv_timer_t * timer) {
-    if (initCounter < 3) {
+    if (initCounter < 10) {
         if (scrMode == 0) {
             scrMode = 1;
         }
@@ -1728,14 +1732,28 @@ void check_sensors_and_update_buffer() {
     ESP_LOGI("SWITCH_CHECK", "Total number of checked switches: %d", numOfSensors);
 }
 
+int SaveConfigsCounter = 0; // Counter for save configs bar
+static void save_configsbar_timer(lv_timer_t * timer)
+{
+    lv_bar_set_value(ui_pbSaveConfigs, SaveConfigsCounter, LV_ANIM_OFF);  // 0 → 100 in steps of 10
+    SaveConfigsCounter += 10; // Increment the counter by 10
+    if(SaveConfigsCounter >= 100) {
+        check_switches_and_get_dropdown_values();
+        check_sensors_and_update_buffer();
+        check_switches_and_get_dropdown_values_for_dims();
+        save_panel_configuration_to_nvs(numOfOutputs, outputsBuffer, numOfSensors, sensorsBuffer, numOfDims, dimsBuffer);
+        // Save the panel settings to NVS
+        ESP_LOGI(TAG, "##### Panel Settings Saved Successfully! #####");
+        esp_restart();
+    }
+}
+
 void save_panel_settings()
 {
-    check_switches_and_get_dropdown_values();
-    check_sensors_and_update_buffer();
-    check_switches_and_get_dropdown_values_for_dims();
-    save_panel_configuration_to_nvs(numOfOutputs, outputsBuffer, numOfSensors, sensorsBuffer, numOfDims, dimsBuffer);
-    // Save the panel settings to NVS
-    ESP_LOGI(TAG, "##### Panel Settings Saved Successfully! #####");
+    lv_obj_clear_flag(ui_pnlSaveConfigs, LV_OBJ_FLAG_HIDDEN);     /// Flags
+    lv_obj_move_foreground(ui_pnlSaveConfigs);
+    lv_timer_t * initTim = lv_timer_create(save_configsbar_timer, 100, NULL);
+
 }
 
 void save_theme_settings()
@@ -1939,9 +1957,9 @@ void display_manager_init() {
     ESP_LOGI(TAG, "Initialize RGB LCD panel");
     
     ESP_ERROR_CHECK(esp_lcd_panel_reset(panel_handle));
-    vTaskDelay(pdMS_TO_TICKS(200));
+    //vTaskDelay(pdMS_TO_TICKS(200));
     ESP_ERROR_CHECK(esp_lcd_panel_init(panel_handle));
-    vTaskDelay(pdMS_TO_TICKS(200));
+    //vTaskDelay(pdMS_TO_TICKS(200));
 
 #if EXAMPLE_PIN_NUM_BK_LIGHT >= 0
     ESP_LOGI(TAG, "Turn on LCD backlight");
@@ -2041,7 +2059,7 @@ void display_manager_init() {
     ESP_ERROR_CHECK(esp_timer_create(&lvgl_tick_timer_args, &lvgl_tick_timer));
     ESP_ERROR_CHECK(esp_timer_start_periodic(lvgl_tick_timer, EXAMPLE_LVGL_TICK_PERIOD_MS * 1000));
 
-    lv_timer_t * updateScreentimer = lv_timer_create(timer_updateTimer_callback, 500, NULL);
+    lv_timer_t * updateScreentimer = lv_timer_create(timer_updateTimer_callback, 150, NULL);//DEFAULT 500 du sadece denemek icin 100 yaptim eger iyi degilse tekrar 500 yap
     lv_timer_t * wallpaperTimer = lv_timer_create(wallpaper_update_timer_callback, 1000, NULL);
     lv_timer_t * initTim = lv_timer_create(init_timer, 100, NULL);
     
@@ -2071,6 +2089,7 @@ void display_manager_init() {
         // Release the mutex
         ui_init();
         lv_scr_load(ui_scrInit);
+        ui_scrPanelSettings_IO_Dim_init();
         example_lvgl_unlock();
     }
 }

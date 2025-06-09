@@ -39,6 +39,7 @@ idf_component_register(SRCS
 "main.c" 
 "lvgl_demo_ui.c"
 "display_manager.c"
+"settings_page.c"
 "data_manager.c"
 "../components/ui_files/ui.c"
 

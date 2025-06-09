@@ -34,7 +34,9 @@
         "hexnet_canbus.h": "c",
         "array": "c",
         "vector": "c",
-        "xstring": "c"
+        "xstring": "c",
+        "settings_page.h": "c",
+        "hexnet_nvs.h": "c"
     },
     "a-file-icon-vscode.arrowTheme": "material"
 }
