@@ -1,6 +1,6 @@
 {
     "idf.adapterTargetName": "esp32s3",
-    "idf.portWin": "COM5",
+    "idf.portWin": "COM10",
     "idf.flashType": "UART",
     "files.associations": {
         "esp_lcd_touch_gt911.h": "c",

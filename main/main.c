@@ -86,7 +86,7 @@ void app_main(void)
     vTaskDelay(pdMS_TO_TICKS(200));
     display_manager_init(); // Display manager'ı başlat
     ble_init();
-    wifi_ini();
+    //wifi_ini();
     
 }
 
