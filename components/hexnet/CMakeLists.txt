@@ -6,7 +6,10 @@ idf_component_register(
     "src/hexnet_nvs.c"
     "src/hexnet_canbus.c"
 
-
+    REQUIRES
+    esp_timer
+    driver
+    freertos
 
     
     INCLUDE_DIRS 

@@ -35,6 +35,7 @@ esp_err_t nvs_write_int(const char* key, int value) {
 esp_err_t nvs_read_int(const char* key, int* value) {
     nvs_handle_t nvs_handle;
     esp_err_t err;
+    int32_t temp_value;
 
     // Open NVS handle
     err = nvs_open("storage", NVS_READONLY, &nvs_handle);
@@ -44,7 +45,10 @@ esp_err_t nvs_read_int(const char* key, int* value) {
     }
 
     // Read integer from NVS
-    err = nvs_get_i32(nvs_handle, key, value);
+    err = nvs_get_i32(nvs_handle, key, &temp_value);
+    if (err == ESP_OK) {
+        *value = (int)temp_value;
+    }
     nvs_close(nvs_handle);
     return err;
 }

@@ -27,8 +27,9 @@
  #include "esp_gatt_common_api.h"
  
 
- void twai_ini(void);
- // Getter Functions
+void twai_ini(void);
+void can_watchdog_task(void *pvParameter);
+// Getter Functions
 uint16_t get_voltage(); 
 uint16_t get_outputs();
 uint16_t get_inputs();

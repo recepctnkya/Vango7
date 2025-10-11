@@ -8,6 +8,7 @@
 #include "esp_err.h"
 #include "esp_log.h"
 #include "driver/twai.h"
+#include <esp_timer.h>
 
 
 
@@ -21,6 +22,16 @@
 
 static bool driver_installed = false;
 #define POLLING_RATE_MS 1000
+
+// Error recovery tracking variables
+static uint32_t error_recovery_count = 0; // Error recovery counter
+static uint32_t last_successful_tx = 0;   // Last successful transmission timestamp
+static uint32_t last_health_check = 0;    // Last health check timestamp
+static uint32_t last_recovery_attempt = 0; // Last recovery attempt timestamp
+
+// Forward declarations
+static void check_and_recover_from_errors(void);
+static void monitor_can_health(void);
 
 static const twai_timing_config_t t_config = TWAI_TIMING_CONFIG_500KBITS();
 static const twai_filter_config_t f_config = TWAI_FILTER_CONFIG_ACCEPT_ALL();
@@ -85,7 +96,114 @@ uint8_t get_canbus_connection_status() {
     return canbusConnection;
 }
 
+// Error recovery function
+static void check_and_recover_from_errors() {
+    uint32_t current_time = esp_timer_get_time() / 1000;
+    
+    // Prevent excessive recovery attempts (max once every 10 seconds)
+    if (current_time - last_recovery_attempt < 10000) {
+        return;
+    }
+    last_recovery_attempt = current_time;
+    
+    twai_status_info_t status;
+    twai_get_status_info(&status);
+    
+    // Check for Bus-Off condition
+    if (status.state == TWAI_STATE_BUS_OFF) {
+        ESP_LOGW(TAG, "CAN Bus-Off detected! Attempting recovery...");
+        error_recovery_count++;
+        
+        // Stop and restart the driver
+        twai_stop();
+        vTaskDelay(pdMS_TO_TICKS(100));
+        
+        if (twai_start() == ESP_OK) {
+            ESP_LOGI(TAG, "CAN driver restarted successfully (recovery #%"PRIu32")", error_recovery_count);
+        } else {
+            ESP_LOGE(TAG, "Failed to restart CAN driver (recovery #%"PRIu32")", error_recovery_count);
+        }
+    }
+    
+    // Check for high error counts
+    if (status.tx_error_counter > 100 || status.rx_error_counter > 100) {
+        ESP_LOGW(TAG, "High error counts detected");
+        
+        // Reset error counters
+        twai_initiate_recovery();
+        ESP_LOGI(TAG, "CAN error recovery initiated");
+    }
+}
 
+// Watchdog monitoring function
+static void monitor_can_health() {
+    uint32_t current_time = esp_timer_get_time() / 1000;
+    
+    // Only check health every 5 seconds to prevent excessive calls
+    if (current_time - last_health_check < 5000) {
+        return;
+    }
+    last_health_check = current_time;
+    
+    // Check if we haven't had a successful transmission in 10 seconds
+    if (last_successful_tx > 0 && (current_time - last_successful_tx) > 10000) {
+        ESP_LOGW(TAG, "No successful CAN transmission");
+        check_and_recover_from_errors();
+    }
+}
+
+// Watchdog task to monitor CAN bus health
+void can_watchdog_task(void *pvParameter) {
+    uint32_t last_status_check = 0;
+    uint32_t consecutive_failures = 0;
+    
+    while(1) {
+        uint32_t current_time = esp_timer_get_time() / 1000;
+        
+        // Check CAN status every 5 seconds
+        if (current_time - last_status_check >= 5000) {
+            twai_status_info_t status;
+            twai_get_status_info(&status);
+            
+            ESP_LOGI(TAG, "CAN Status check");
+            
+            // Check for problematic states
+            if (status.state == TWAI_STATE_BUS_OFF) {
+                ESP_LOGE(TAG, "CAN Bus-Off state detected by watchdog!");
+                check_and_recover_from_errors();
+                consecutive_failures++;
+            } else if (status.state == TWAI_STATE_RECOVERING) {
+                ESP_LOGW(TAG, "CAN in recovery state");
+            } else if (status.state == TWAI_STATE_RUNNING) {
+                consecutive_failures = 0; // Reset failure counter on successful state
+            }
+            
+            // If we have too many consecutive failures, try a full restart
+            if (consecutive_failures >= 3) {
+                ESP_LOGE(TAG, "Too many CAN failures, restarting");
+                
+                // Stop and uninstall driver
+                twai_stop();
+                vTaskDelay(pdMS_TO_TICKS(1000));
+                twai_driver_uninstall();
+                vTaskDelay(pdMS_TO_TICKS(1000));
+                
+                // Reinitialize
+                twai_ini();
+                if (driver_installed) {
+                    ESP_LOGI(TAG, "CAN driver fully restarted successfully");
+                    consecutive_failures = 0;
+                } else {
+                    ESP_LOGE(TAG, "Failed to restart CAN driver");
+                }
+            }
+            
+            last_status_check = current_time;
+        }
+        
+        vTaskDelay(pdMS_TO_TICKS(1000)); // Check every second
+    }
+}
 
 // Function to send a CAN frame
 void send_can_frame(uint32_t id, uint8_t *data) {
@@ -98,7 +216,11 @@ void send_can_frame(uint32_t id, uint8_t *data) {
     // Send the message over the CAN bus
     esp_err_t res = twai_transmit(&message, pdMS_TO_TICKS(100));  // 100 ms timeout
     if (res != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to send frame ID: 0x%03X", (unsigned int)id);
+        ESP_LOGE(TAG, "Failed to send frame ID: 0x%03X, error: 0x%x", (unsigned int)id, res);
+        // Check if we need to recover from errors
+        check_and_recover_from_errors();
+    } else {
+        last_successful_tx = esp_timer_get_time() / 1000; // Update successful TX timestamp
     }
 }
 
@@ -144,80 +266,141 @@ void twai_task(void *pvParameter)
             vTaskDelay(pdMS_TO_TICKS(1000));
             return;
         }
-        // Check if alert happened
+        
+        // Check if alert happened with timeout
         uint32_t alerts_triggered;
-        twai_read_alerts(&alerts_triggered, pdMS_TO_TICKS(POLLING_RATE_MS));
-        twai_status_info_t twaistatus;
-        twai_get_status_info(&twaistatus);
+        esp_err_t alert_result = twai_read_alerts(&alerts_triggered, pdMS_TO_TICKS(100));
+        
+        if (alert_result == ESP_OK) {
+            twai_status_info_t twaistatus;
+            twai_get_status_info(&twaistatus);
 
-        // Handle alerts
-        if (alerts_triggered & TWAI_ALERT_ERR_PASS) {
-            //ESP_LOGI(EXAMPLE_TAG,"Alert: TWAI controller has become error passive.");
-        }
-        if (alerts_triggered & TWAI_ALERT_BUS_ERROR) {
-           // ESP_LOGI(EXAMPLE_TAG,"Alert: A (Bit, Stuff, CRC, Form, ACK) error has occurred on the bus.");
-            //ESP_LOGI(EXAMPLE_TAG,"Bus error count: %"PRIu32, twaistatus.bus_error_count);
-        }
-
-        if (alerts_triggered & TWAI_ALERT_RX_QUEUE_FULL) {
-            //ESP_LOGI(EXAMPLE_TAG,"Alert: The RX queue is full causing a received frame to be lost.");
-            //ESP_LOGI(EXAMPLE_TAG,"RX buffered: %"PRIu32, twaistatus.msgs_to_rx);
-            //ESP_LOGI(EXAMPLE_TAG,"RX missed: %"PRIu32, twaistatus.rx_missed_count);
-            //ESP_LOGI(EXAMPLE_TAG,"RX overrun %"PRIu32, twaistatus.rx_overrun_count);
-        }
-
-        // Check if message is received
-        if (alerts_triggered & TWAI_ALERT_RX_DATA) {
-            // One or more messages received. Handle all.
+            // Handle alerts
+            if (alerts_triggered & TWAI_ALERT_ERR_PASS) {
+                ESP_LOGW(TAG,"Alert: TWAI controller has become error passive.");
+                check_and_recover_from_errors();
+            }
             
-            if (twai_receive(&message, 0) == ESP_OK) {
-                handle_rx_message(message);
+            if (alerts_triggered & TWAI_ALERT_BUS_ERROR) {
+                ESP_LOGW(TAG,"Alert: A (Bit, Stuff, CRC, Form, ACK) error has occurred on the bus.");
+                ESP_LOGW(TAG,"Bus error count: %"PRIu32, twaistatus.bus_error_count);
+                check_and_recover_from_errors();
+            }
+
+            if (alerts_triggered & TWAI_ALERT_RX_QUEUE_FULL) {
+                ESP_LOGW(TAG,"RX queue full, clearing");
                 
-                canbusConnection = 1;
+                // Clear the queue aggressively to prevent further issues
+                int cleared_count = 0;
+                while (twai_receive(&message, 0) == ESP_OK) {
+                    cleared_count++;
+                    // Process the message if it's important, otherwise discard
+                    if (message.identifier == FRAME_1_ID || message.identifier == FRAME_2_ID || message.identifier == FRAME_3_ID) {
+                        handle_rx_message(message);
+                    }
+                }
+            }
+
+            // Check if message is received
+            if (alerts_triggered & TWAI_ALERT_RX_DATA) {     
+                if (twai_receive(&message, 0) == ESP_OK) {
+                   handle_rx_message(message);
+                   canbusConnection = 1;
+                }
+            }
+        } else if (alert_result == ESP_ERR_TIMEOUT) {
+            // Timeout is normal, continue monitoring
+        } else {
+            ESP_LOGE(TAG, "Error reading alerts: 0x%x", alert_result);
+        }
+        
+        // Proactive queue monitoring - check queue level and clear if getting full
+        twai_status_info_t status;
+        twai_get_status_info(&status);
+        if (status.msgs_to_rx > 3) { // If more than 3 messages queued
+            ESP_LOGW(TAG, "RX queue full, clearing");
+            int cleared_count = 0;
+            while (twai_receive(&message, 0) == ESP_OK && cleared_count < 5) { // Clear up to 5 messages
+                cleared_count++;
+                if (message.identifier == FRAME_1_ID || message.identifier == FRAME_2_ID || message.identifier == FRAME_3_ID) {
+                    handle_rx_message(message);
+                }
             }
         }
-        else {
-            canbusConnection = 0;
-        }  
-        vTaskDelay(pdMS_TO_TICKS(100));
+        
+        // Update connection status based on recent activity
+        if (alerts_triggered & TWAI_ALERT_RX_DATA) {
+            canbusConnection = 1;
+        } else {
+            // Only set to 0 if we haven't had activity for a while
+            static uint32_t last_activity = 0;
+            uint32_t current_time = esp_timer_get_time() / 1000;
+            if (current_time - last_activity > 5000) { // 5 seconds without activity
+                canbusConnection = 0;
+            }
+            if (alerts_triggered & TWAI_ALERT_RX_DATA) {
+                last_activity = current_time;
+            }
+        }
+        
+        vTaskDelay(pdMS_TO_TICKS(100)); // 100ms delay for stable operation
 
         if(twaiCounter == 100) {    
             twaiCounter = 0;
-    }
-    twaiCounter++;
+        }
+        twaiCounter++;
     }
 }
 
 void twai_ini(void)
 {
+    esp_err_t ret;
+    
     // Install TWAI driver
-    if (twai_driver_install(&g_config, &t_config, &f_config) == ESP_OK) {
-        ESP_LOGI(EXAMPLE_TAG,"Driver installed");
+    ret = twai_driver_install(&g_config, &t_config, &f_config);
+    if (ret == ESP_OK) {
+        ESP_LOGI(TAG,"Driver installed");
     } else {
-        ESP_LOGE(EXAMPLE_TAG,"Failed to install driver");
+        ESP_LOGE(TAG,"Failed to install driver: 0x%x", ret);
         return;
     }
     
     // Start TWAI driver
-    if (twai_start() == ESP_OK) {
-        ESP_LOGI(EXAMPLE_TAG,"Driver started");
+    ret = twai_start();
+    if (ret == ESP_OK) {
+        ESP_LOGI(TAG,"Driver started");
     } else {
-        ESP_LOGE(EXAMPLE_TAG,"Failed to start driver");
+        ESP_LOGE(TAG,"Failed to start driver: 0x%x", ret);
+        twai_driver_uninstall();
         return;
     }
 
     // Reconfigure alerts to detect frame receive, Bus-Off error and RX queue full states
-    uint32_t alerts_to_enable = TWAI_ALERT_RX_DATA | TWAI_ALERT_ERR_PASS | TWAI_ALERT_BUS_ERROR | TWAI_ALERT_RX_QUEUE_FULL;
-    if (twai_reconfigure_alerts(alerts_to_enable, NULL) == ESP_OK) {
-        ESP_LOGI(EXAMPLE_TAG,"CAN Alerts reconfigured");
+    uint32_t alerts_to_enable = TWAI_ALERT_RX_DATA | TWAI_ALERT_ERR_PASS | TWAI_ALERT_BUS_ERROR | 
+                               TWAI_ALERT_RX_QUEUE_FULL | TWAI_ALERT_TX_FAILED | TWAI_ALERT_TX_SUCCESS;
+    ret = twai_reconfigure_alerts(alerts_to_enable, NULL);
+    if (ret == ESP_OK) {
+        ESP_LOGI(TAG,"CAN Alerts reconfigured");
     } else {
-        ESP_LOGE(EXAMPLE_TAG,"Failed to reconfigure alerts");
+        ESP_LOGE(TAG,"Failed to reconfigure alerts: 0x%x", ret);
+        twai_stop();
+        twai_driver_uninstall();
         return;
     }
 
+    // Initialize monitoring variables
+    last_successful_tx = esp_timer_get_time() / 1000;
+    error_recovery_count = 0;
+    last_health_check = 0;
+    last_recovery_attempt = 0;
+
     // TWAI driver is now successfully installed and started
     driver_installed = true;
+    ESP_LOGI(TAG,"CAN bus initialization completed successfully");
  
     //define twai task
-    xTaskCreate(twai_task, "twai_task", 2048, NULL, 5, NULL);
+    xTaskCreate(twai_task, "twai_task", 4096, NULL, 5, NULL);
+    
+    //define watchdog task
+    xTaskCreate(can_watchdog_task, "can_watchdog", 3072, NULL, 3, NULL);
 }

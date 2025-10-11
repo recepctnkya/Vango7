@@ -22,5 +22,16 @@ void set_rgb_to_white();
 void set_RGBTurnONOFF(int val);
 
 
+// Output buttons creation function
+void create_output_buttons_on_screen(void);
+
+void move_buttons_to_main_screen(void);
+
+// Dim widgets visibility initialization
+void initialize_dim_widgets_visibility(void);
+
+// Communication animation timer control functions
+void start_comm_animation_timer(void);
+void stop_comm_animation_timer(void);
 
 #endif // DISPLAY_MANAGER_H

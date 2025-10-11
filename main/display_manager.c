@@ -37,6 +37,10 @@ static const char *TAG = "DISPLAY_MANAGER";
 
 extern lv_obj_t * ui_scrTheme;
 extern lv_obj_t * ui_scrWallpaper;
+extern lv_obj_t * ui_scrPages;
+extern lv_obj_t * ui_scrDimsandSensorsandWaters;
+
+
 
 extern lv_obj_t * ui_lblVangoText;
 extern lv_obj_t *ui_imgDevice;
@@ -92,35 +96,72 @@ extern lv_obj_t* ui_cbxDim2;
 extern lv_obj_t* ui_cbxDim3;
 extern lv_obj_t* ui_cbxDim4;
 
+// Dim slider widgets
+extern lv_obj_t* ui_slDim1;
+extern lv_obj_t* ui_slDim2;
+extern lv_obj_t* ui_slDim3;
+extern lv_obj_t* ui_slDim4;
+
+// Missing extern declarations for theme functions
+extern lv_obj_t * ui_Label2;
+extern lv_obj_t * ui_Label3;
+extern lv_obj_t * ui_Label6;
+extern lv_obj_t * ui_Label7;
+extern lv_obj_t * ui_Label8;
+extern lv_obj_t * ui_Label9;
+extern lv_obj_t * ui_Label12;
+extern lv_obj_t * ui_lblDim1;
+extern lv_obj_t * ui_lblDim2;
+extern lv_obj_t * ui_lblDim3;
+extern lv_obj_t * ui_lblDim4;
+extern lv_obj_t * ui_lblTemperature1;
+extern lv_obj_t * ui_lblTemperature2;
+extern lv_obj_t * ui_lblUnderArcTemperature1;
+extern lv_obj_t * ui_lblUnderArcTemperature2;
+extern lv_obj_t * ui_lblWater1;
+extern lv_obj_t * ui_lblWater2;
+extern lv_obj_t * ui_lblUnderArcWater1;
+extern lv_obj_t * ui_lblUnderArcWater2;
+
 extern lv_obj_t* ui_Checkbox1;
 extern lv_obj_t* ui_Checkbox2;
 extern lv_obj_t* ui_Checkbox3;
 extern lv_obj_t* ui_Checkbox4;
 extern lv_obj_t* ui_Checkbox5;
-
 extern lv_obj_t* ui_Checkbox6;
 
 
-// Declare the panels
-extern lv_obj_t* ui_pnlGrup1;
-extern lv_obj_t* ui_pnlGrup2;
-extern lv_obj_t* ui_pnlGrup3;
 extern lv_obj_t* ui_pnlOutputs;
 extern lv_obj_t* ui_pnlConnectionLost;
+extern lv_obj_t * ui_Panel9;
+extern lv_obj_t * ui_Panel1;
 
 extern lv_obj_t *ui_imgWForecast;
 extern lv_obj_t *ui_lblDateAndTime;
+extern lv_obj_t *ui_lblGrup1;
+extern lv_obj_t *ui_lblGrup2;
+extern lv_obj_t *ui_lblGrup1Oran1;
+extern lv_obj_t *ui_lblGrup1Oran2;
+extern lv_obj_t *ui_lblPnlGrup1Sicaklik1;
+extern lv_obj_t *ui_lblPnlGrup1Sicaklik2;
 lv_obj_t * ui_btnIOGot;
 
 
 extern lv_obj_t *ui_lblSelectTheme;
-extern lv_obj_t *ui_lblWallpaper; 
-extern lv_obj_t *ui_lblRolllerTime;
-extern lv_obj_t *ui_swEnableWallpaper;
-extern lv_obj_t *ui_rlrTime;
+extern lv_obj_t *ui_lblSettingsB;
+extern lv_obj_t *ui_lblPnlGrup1SicaklikDeger1;
+extern lv_obj_t *ui_lblPnlGrup1SicaklikDeger2;
+extern lv_obj_t *ui_arcTemperature1;
+extern lv_obj_t *ui_arcTemperature2;
+extern lv_obj_t *ui_lblTemperature1;
+extern lv_obj_t *ui_lblTemperature2;
+extern lv_obj_t *ui_arcWater1;
+extern lv_obj_t *ui_arcWater2;
+extern lv_obj_t *ui_lblWater1;
+extern lv_obj_t *ui_lblWater2;
+
 
 extern lv_obj_t * ui_scrInit;
-extern lv_obj_t *ui_scrRules;
 extern lv_obj_t *ui_scrPanelSettings;
 extern lv_obj_t *ui_lblPanelSettings;
 extern lv_obj_t *ui_lblSensors;
@@ -133,6 +174,11 @@ extern lv_obj_t *ui_Colorwheel1;
 extern lv_obj_t *ui_btnRGBColor;
 extern lv_obj_t *ui_brInit;
 extern lv_obj_t *ui_Label1;
+
+extern lv_obj_t * ui_pbSaveConfigs;
+extern lv_obj_t * ui_pnlSaveConfigs;
+
+
 
 extern const lv_img_dsc_t ui_img_lamp_png;
 extern const lv_img_dsc_t ui_img_water_png;
@@ -277,6 +323,45 @@ extern const lv_img_dsc_t ui_img_heater_png;
 #define EXAMPLE_LVGL_TASK_PRIORITY     2
 
 static SemaphoreHandle_t lvgl_mux = NULL;
+static lv_timer_t * comm_animation_timer = NULL;
+
+// Forward declaration for animation function
+void commScreen_Animation(lv_obj_t * TargetObject, int delay);
+
+// Custom opacity animation callback
+static void set_opacity_cb(void * var, int32_t val) {
+    lv_obj_set_style_opa((lv_obj_t*)var, val, LV_PART_MAIN | LV_STATE_DEFAULT);
+}
+
+// Custom repetitive animation function
+static void commScreen_RepetitiveAnimation(lv_obj_t * TargetObject) {
+    // Create a simple repetitive animation that moves the object back and forth
+    lv_anim_t anim;
+    lv_anim_init(&anim);
+    lv_anim_set_var(&anim, TargetObject);
+    lv_anim_set_time(&anim, 1000);  // 1 second duration
+    lv_anim_set_repeat_count(&anim, LV_ANIM_REPEAT_INFINITE);  // Repeat infinitely
+    lv_anim_set_playback_time(&anim, 1000);  // 1 second playback
+    lv_anim_set_values(&anim, -175, -75);  // Move from -175px to -75px (100px range)
+    lv_anim_set_exec_cb(&anim, (lv_anim_exec_xcb_t) lv_obj_set_x);
+    lv_anim_set_path_cb(&anim, lv_anim_path_ease_in_out);
+    lv_anim_start(&anim);
+}
+
+// Custom repetitive animation function for Bluetooth connection
+static void btScreen_RepetitiveAnimation(lv_obj_t * TargetObject) {
+    // Create a simple repetitive animation that moves the object back and forth
+    lv_anim_t anim;
+    lv_anim_init(&anim);
+    lv_anim_set_var(&anim, TargetObject);
+    lv_anim_set_time(&anim, 1000);  // 1 second duration
+    lv_anim_set_repeat_count(&anim, LV_ANIM_REPEAT_INFINITE);  // Repeat infinitely
+    lv_anim_set_playback_time(&anim, 1000);  // 1 second playback
+    lv_anim_set_values(&anim, 160, 60);  // Move from 160px to 60px (100px range)
+    lv_anim_set_exec_cb(&anim, (lv_anim_exec_xcb_t) lv_obj_set_x);
+    lv_anim_set_path_cb(&anim, lv_anim_path_ease_in_out);
+    lv_anim_start(&anim);
+}
 
 // we use two semaphores to sync the VSYNC event and the LVGL task, to avoid potential tearing effect
 #if CONFIG_EXAMPLE_AVOID_TEAR_EFFECT_WITH_SEM
@@ -330,7 +415,7 @@ void parse_configuration_data(cJSON* json);
 void parse_rules_data(cJSON* json);
 char* create_json_data_packet(const uint16_t* regs_data, int numOfOutputs, int numOfDims, int numOfSensors, bool slaveConnectionStatus, int themeType, int numberOfNotifications, cJSON* notifications);
 void parse_ble_data(const char* json_data);
-
+void create_buttons_for_screen(lv_obj_t* parent, const char* screen_type);
 
 //###############################   LVGL FUNCTIONS   ##########################################
 static bool example_on_vsync_event(esp_lcd_panel_handle_t panel, const esp_lcd_rgb_panel_event_data_t *event_data, void *user_data)
@@ -468,9 +553,10 @@ void my_btnThemeWhiteFunc(void)
     lv_obj_set_style_bg_color(ui_scrMain, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_color(ui_scrTheme, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_color(ui_scrSettings, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_color(ui_scrRules, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_color(ui_scrPanelSettings, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_color(ui_scrRGB, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(ui_scrPages, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(ui_scrDimsandSensorsandWaters, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
 
     
     lv_obj_set_style_text_color(ui_lblPanelSettings, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -481,27 +567,16 @@ void my_btnThemeWhiteFunc(void)
     lv_obj_set_style_text_color(ui_Checkbox3, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_color(ui_Checkbox4, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_color(ui_Checkbox5, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
-
+    lv_obj_set_style_text_color(ui_Checkbox6, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
 
     lv_obj_set_style_text_color(ui_lblPnlGrup1Sicaklik1, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_color(ui_lblPnlGrup1Sicaklik2, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_color(ui_lblPnlGrup1SicaklikDeger1, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_color(ui_lblPnlGrup1SicaklikDeger2, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_color(ui_pnlGrupSicaklik1, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_color(ui_pnlGrupSicaklik2, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-
-
-    lv_obj_set_style_bg_color(ui_pnlGrup1, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_color(ui_lblGrup1Oran1, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_color(ui_lblGrup1, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    lv_obj_set_style_bg_color(ui_pnlGrup2, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_color(ui_lblGrup1Oran2, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui_lblGrup1, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_color(ui_lblGrup2, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    lv_obj_set_style_bg_color(ui_pnlGrup3, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_color(ui_lblGrup1Oran3, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_color(ui_lblGrup3, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+
 
 
     lv_obj_set_style_bg_color(ui_pnlSensors, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -511,17 +586,38 @@ void my_btnThemeWhiteFunc(void)
 
 
     lv_obj_set_style_text_color(ui_lblSelectTheme, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_color(ui_lblWallpaper, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_color(ui_lblRolllerTime, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    lv_obj_set_style_text_color(ui_lblRolllerTime, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_color(ui_lblRolllerTime, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_color(ui_lblRolllerTime, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
 
     lv_obj_set_style_text_color(ui_lblWeather, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_color(ui_lblDateAndTime, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_color(ui_lblSettingsB, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
     
+    // Add missing widgets for white theme
+    lv_obj_set_style_text_color(ui_lblLock, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui_lblPnlGrup1SicaklikDeger1, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui_lblPnlGrup1SicaklikDeger2, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+
+
+
+    lv_obj_set_style_text_color(ui_Label2, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui_Label3, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui_Label6, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui_Label7, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui_Label8, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui_Label9, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    
+    // Dim and sensor widgets
+    lv_obj_set_style_text_color(ui_lblDim1, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui_lblDim2, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui_lblDim3, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui_lblDim4, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui_lblTemperature1, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui_lblTemperature2, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui_lblUnderArcTemperature1, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui_lblUnderArcTemperature2, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui_lblWater1, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui_lblWater2, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui_lblUnderArcWater1, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui_lblUnderArcWater2, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
 
     for (int i = 0; i < numOfDims; i++) {
         lv_obj_set_style_text_color(lblDims[i], lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -538,9 +634,10 @@ void my_btnBlackThemeFunc(void)
     lv_obj_set_style_bg_color(ui_scrMain, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_color(ui_scrTheme, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_color(ui_scrSettings, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_color(ui_scrRules, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_color(ui_scrPanelSettings, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_color(ui_scrRGB, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(ui_scrPages, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(ui_scrDimsandSensorsandWaters, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
 
     
     lv_obj_set_style_text_color(ui_lblPanelSettings, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -553,26 +650,14 @@ void my_btnBlackThemeFunc(void)
     lv_obj_set_style_text_color(ui_Checkbox5, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_color(ui_Checkbox6, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
 
-
     lv_obj_set_style_text_color(ui_lblPnlGrup1Sicaklik1, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_color(ui_lblPnlGrup1Sicaklik2, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_color(ui_lblPnlGrup1SicaklikDeger1, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_color(ui_lblPnlGrup1SicaklikDeger2, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_color(ui_pnlGrupSicaklik1, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_color(ui_pnlGrupSicaklik2, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
-
-
-    lv_obj_set_style_bg_color(ui_pnlGrup1, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_color(ui_lblGrup1Oran1, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_color(ui_lblGrup1, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    lv_obj_set_style_bg_color(ui_pnlGrup2, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_color(ui_lblGrup1Oran2, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui_lblGrup1, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_color(ui_lblGrup2, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    lv_obj_set_style_bg_color(ui_pnlGrup3, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_color(ui_lblGrup1Oran3, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_color(ui_lblGrup3, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+
 
 
     lv_obj_set_style_bg_color(ui_pnlSensors, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -581,12 +666,36 @@ void my_btnBlackThemeFunc(void)
     lv_obj_set_style_text_color(ui_lblVangoText, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
 
     lv_obj_set_style_text_color(ui_lblSelectTheme, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_color(ui_lblWallpaper, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_color(ui_lblRolllerTime, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
 
     lv_obj_set_style_text_color(ui_lblWeather, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_color(ui_lblDateAndTime, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_color(ui_lblSettingsB, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    
+    // Add missing widgets for black theme
+    lv_obj_set_style_text_color(ui_lblLock, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui_lblPnlGrup1SicaklikDeger1, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui_lblPnlGrup1SicaklikDeger2, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui_Label2, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui_Label3, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui_Label6, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui_Label7, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui_Label8, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui_Label9, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    
+    // Dim and sensor widgets
+    lv_obj_set_style_text_color(ui_lblDim1, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui_lblDim2, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui_lblDim3, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui_lblDim4, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui_lblTemperature1, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui_lblTemperature2, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui_lblUnderArcTemperature1, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui_lblUnderArcTemperature2, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui_lblWater1, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui_lblWater2, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui_lblUnderArcWater1, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(ui_lblUnderArcWater2, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
 
     for (int i = 0; i < numOfDims; i++) {
         lv_obj_set_style_text_color(lblDims[i], lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -631,48 +740,7 @@ const void* get_image_for_button(int outputBufferIndex) {
 }
 
 
-// Function to set panel coordinates dynamically
-void set_sensor_panels_coordinates(int numOfSensors, int sensorsBuffer[5]) {
-    lv_obj_t* panels[3] = {ui_pnlGrup1, ui_pnlGrup2, ui_pnlGrup3};
-    lv_obj_t* panels2[2] = {ui_pnlGrupSicaklik1, ui_pnlGrupSicaklik2};
 
-    int x_coords[3] = {-320, -210, -101};
-    int y_coords[3] = {60, 61, 59};
-    int x2_coords[2] = {-320, -208};
-    int y2_coords[2] = {147, 151};
-
-
-    lv_obj_clear_flag(ui_pnlGrup1, LV_OBJ_FLAG_HIDDEN);     /// Flags
-    lv_obj_clear_flag(ui_pnlGrup2, LV_OBJ_FLAG_HIDDEN);     /// Flags
-    lv_obj_clear_flag(ui_pnlGrup3, LV_OBJ_FLAG_HIDDEN);     /// Flags
-    lv_obj_clear_flag(ui_pnlGrupSicaklik1, LV_OBJ_FLAG_HIDDEN);     /// Flags
-    lv_obj_clear_flag(ui_pnlGrupSicaklik2, LV_OBJ_FLAG_HIDDEN);     /// Flags
-
-    int current_index = 0;
-    for (int i = 0; i < 3; i++) {
-        if (sensorsBuffer[i + 2] == 1) {
-            lv_obj_set_x(panels[i], x_coords[current_index]);
-            lv_obj_set_y(panels[i], y_coords[current_index]);
-            current_index++;
-        }
-        else {
-            lv_obj_set_x(panels[i], LV_COORD_MAX);
-            lv_obj_set_y(panels[i], LV_COORD_MAX);
-        }
-    }
-    current_index = 0;
-    for (int i = 0; i < 2; i++) {
-        if (sensorsBuffer[i] == 1) {
-            lv_obj_set_x(panels2[i], x2_coords[current_index]);
-            lv_obj_set_y(panels2[i], y2_coords[current_index]);
-            current_index++;
-        }
-        else {
-            lv_obj_set_x(panels2[i], LV_COORD_MAX);
-            lv_obj_set_y(panels2[i], LV_COORD_MAX);
-        }
-    }
-}
 
 // Function to toggle button color based on regs_data
 void button_events(lv_event_t* e) {
@@ -900,7 +968,6 @@ void create_dynamic_ui(lv_obj_t* parent) {
         lv_obj_add_flag(switches[0], LV_OBJ_FLAG_CLICKABLE);
     }
 
-    set_sensor_panels_coordinates(3, sensorsBuffer);
     if (panelThemeType){
         my_btnBlackThemeFunc();
     }
@@ -972,39 +1039,20 @@ int initBarCounter = 0;
 int initCounter = 0;
 int scrMode = 0;
 static void init_timer(lv_timer_t * timer) {
-    if (initBarCounter < 21) {
+    // Check if ui_brInit is valid before using it
+    if (ui_brInit != NULL && initBarCounter < 21) {
         lv_bar_set_value(ui_brInit, initBarCounter * 5, LV_ANIM_OFF);   
     }
     initBarCounter++;
 }
 
-// Timer callback function
-static void timer_updateTimer_callback(lv_timer_t * timer) {
-    if (initCounter < 10) {
-        if (scrMode == 0) {
-            scrMode = 1;
-        }
-    }
-    else {
-        if (scrMode == 1) {
-            lv_scr_load(ui_scrMain);
-            scrMode = 0;
-        }
-        initCounter = 11;
-        // Your code here, e.g., update display with new data
-        const uint16_t* regs_data = getSlavesRegsData();
-        update_display_with_data((const uint8_t*)regs_data, 70);
-    }
-    initCounter++;
-
-}
-
-
 static void wallpaper_update_timer_callback(lv_timer_t * timer) {
     if (panelWallpaperEnable) {
         if (panelWallpaperEnableCounter == panelWallpaperTime) {
-            lv_scr_load(ui_scrWallpaper);
-
+            // Check if ui_scrWallpaper is valid before loading it
+            if (ui_scrWallpaper != NULL) {
+                //lv_scr_load(ui_scrWallpaper);
+            }
         }
         panelWallpaperEnableCounter++;
     }
@@ -1012,6 +1060,55 @@ static void wallpaper_update_timer_callback(lv_timer_t * timer) {
         panelWallpaperEnableCounter = 0;
     }
     
+}
+
+// Timer callback for communication animation
+static void comm_animation_timer_callback(lv_timer_t * timer) {
+    static bool comm_animation_started = false;
+    static bool bt_animation_started = false;
+    
+    bool Deviceconnected = get_canbus_connection_status();
+    bool btConnected = get_connection_status();
+    
+    // Handle device connection animation (ui_Panel9)
+    if (Deviceconnected && !comm_animation_started) {
+        // Start the repetitive animation when device connects
+        commScreen_RepetitiveAnimation(ui_Panel9);
+        comm_animation_started = true;
+        // Set color to green when connected
+        lv_obj_set_style_bg_color(ui_Panel9, lv_color_hex(0x00FF00), LV_PART_MAIN | LV_STATE_DEFAULT);
+    } else if (!Deviceconnected && comm_animation_started) {
+        // Stop the animation when device disconnects
+        lv_anim_del(ui_Panel9, NULL);  // Stop all animations on this object
+        comm_animation_started = false;
+        // Set position to -100px and color to red when disconnected
+        lv_obj_set_x(ui_Panel9, -100);
+        lv_obj_set_style_bg_color(ui_Panel9, lv_color_hex(0xFF0000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    } else if (!Deviceconnected && !comm_animation_started) {
+        // Ensure position and color are set correctly when disconnected
+        lv_obj_set_x(ui_Panel9, -100);
+        lv_obj_set_style_bg_color(ui_Panel9, lv_color_hex(0xFF0000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    }
+    
+    // Handle Bluetooth connection animation (ui_Panel1)
+    if (btConnected && !bt_animation_started) {
+        // Start the repetitive animation when Bluetooth connects
+        btScreen_RepetitiveAnimation(ui_Panel1);
+        bt_animation_started = true;
+        // Set color to green when connected
+        lv_obj_set_style_bg_color(ui_Panel1, lv_color_hex(0x00FF00), LV_PART_MAIN | LV_STATE_DEFAULT);
+    } else if (!btConnected && bt_animation_started) {
+        // Stop the animation when Bluetooth disconnects
+        lv_anim_del(ui_Panel1, NULL);  // Stop all animations on this object
+        bt_animation_started = false;
+        // Set position to 110px and color to red when disconnected
+        lv_obj_set_x(ui_Panel1, 110);
+        lv_obj_set_style_bg_color(ui_Panel1, lv_color_hex(0xFF0000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    } else if (!btConnected && !bt_animation_started) {
+        // Ensure position and color are set correctly when disconnected
+        lv_obj_set_x(ui_Panel1, 110);
+        lv_obj_set_style_bg_color(ui_Panel1, lv_color_hex(0xFF0000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    }
 }
 
 // Function to set the button color based on the value
@@ -1041,7 +1138,31 @@ void get_data_json_format(const uint16_t* regs_data, int txPacketType, char** js
 } 
 
 
+// Timer callback function
+static void timer_updateTimer_callback(lv_timer_t * timer) {
+    if (initCounter < 10) {
+        if (scrMode == 0) {
+            scrMode = 1;
+        }
+    }
+    else {
+        if (scrMode == 1) {
+            // Check if ui_scrMain is valid before loading it
+            if (ui_scrMain != NULL) {
+                lv_scr_load(ui_scrMain);
+            }
+            scrMode = 0;
+        }
+        initCounter = 11;
+        // Your code here, e.g., update display with new data
+        const uint16_t* regs_data = getSlavesRegsData();
+        if (regs_data != NULL) {
+            update_display_with_data((const uint8_t*)regs_data, 70);
+        }
+    }
+    initCounter++;
 
+}
 
 
 // Function to update display with new data
@@ -1085,13 +1206,22 @@ void update_display_with_data(const uint8_t *data, int length) {
     lv_label_set_text_fmt(ui_lblPnlGrup1SicaklikDeger2, "%d°C", analog_input_5);
     lv_label_set_text_fmt(ui_lblGrup1Oran1, "%d%%", analog_input_1);
     lv_label_set_text_fmt(ui_lblGrup1Oran2, "%d%%", analog_input_2);
-    lv_label_set_text_fmt(ui_lblGrup1Oran3, "%d%%", analog_input_3);
-
+    
+    // Update temperature widgets with analog input values
+    lv_arc_set_value(ui_arcTemperature1, analog_input_4);
+    lv_arc_set_value(ui_arcTemperature2, analog_input_5);
+    lv_label_set_text_fmt(ui_lblTemperature1, "%d°C", analog_input_4);
+    lv_label_set_text_fmt(ui_lblTemperature2, "%d°C", analog_input_5);
+    
+    // Update water widgets with analog input values
+    lv_arc_set_value(ui_arcWater1, analog_input_1);
+    lv_arc_set_value(ui_arcWater2, analog_input_2);
+    lv_label_set_text_fmt(ui_lblWater1, "%d°C", analog_input_1);
+    lv_label_set_text_fmt(ui_lblWater2, "%d°C", analog_input_2);
 
     // Update the arcs with the fetched data
     lv_arc_set_value(ui_arcGrup1, analog_input_1);
     lv_arc_set_value(ui_arcGrup2, analog_input_2);
-    lv_arc_set_value(ui_arcGrup3, analog_input_3);
 
     
 
@@ -1760,76 +1890,14 @@ void save_panel_settings()
 
 void save_theme_settings()
 {
-    uint16_t selected_index = 0;
-    static char selected_text[32];  // Buffer to store text
-
-    selected_index = lv_roller_get_selected(ui_rlrTime);
-    // Get the selected item text
-    lv_roller_get_selected_str(ui_rlrTime, selected_text, sizeof(selected_text));
-    // Check if switch is enabled (ON)
-    if (lv_obj_has_state(ui_swEnableWallpaper, LV_STATE_CHECKED)) {
-        // Get the selected roller item index
-        panelWallpaperEnable = 1;  // Enable wallpaper
-        // Print the selected roller item
-        ESP_LOGI(TAG, "Wallpaper Enabled, Selected Time: %s-----index = %d", selected_text, selected_index);
-    } else {
-        panelWallpaperEnable = 0;  // Disable wallpaper
-        ESP_LOGI(TAG, "Wallpaper Disabled");
-    }
-
-    // Set panelWallpaperTime based on the selected index
-    switch (selected_index) {
-        case 0: { panelWallpaperTime = 30;  break;}
-        case 1: { panelWallpaperTime = 60;  break;}
-        case 2: { panelWallpaperTime = 120; break;}
-        case 3: { panelWallpaperTime = 300; break;}
-        case 4: { panelWallpaperTime = 600; break;}
-        default:
-            {
-                ESP_LOGW(TAG, "Invalid roller index: %d, setting default to 30", selected_index);
-                panelWallpaperTime = 30;  // Default if index is out of range
-                break;
-            }
-    }
-    ESP_LOGI(TAG, "Wallpaper Enabled, Selected Time: %s-----index = %d panelThemeType =%d panelWallpaperEnable =%d panelWallpaperTime =%d ", selected_text, selected_index,
-             panelThemeType, panelWallpaperEnable, panelWallpaperTime);
-    save_theme_configuration_to_nvs(panelThemeType, panelWallpaperEnable, panelWallpaperTime);
+    save_theme_configuration_to_nvs(&panelThemeType, &panelWallpaperEnable, &panelWallpaperTime);
 }
+
 
 
 void apply_theme_settings()
 {
     // Apply theme enabled status to the switch
-    if (panelWallpaperEnable) {
-        lv_obj_add_state(ui_swEnableWallpaper, LV_STATE_CHECKED);
-        lv_obj_clear_flag(ui_rlrTime, LV_OBJ_FLAG_HIDDEN);     /// Flags
-        lv_obj_clear_flag(ui_lblRolllerTime, LV_OBJ_FLAG_HIDDEN);     /// Flags
-    } else {
-        lv_obj_clear_state(ui_swEnableWallpaper, LV_STATE_CHECKED);
-        lv_obj_add_flag(ui_rlrTime, LV_OBJ_FLAG_HIDDEN);     /// Flags
-        lv_obj_add_flag(ui_lblRolllerTime, LV_OBJ_FLAG_HIDDEN);     /// Flags
-    }
-
-    // Map panelWallpaperTime to the roller index
-    uint16_t roller_index = 0;
-
-    switch (panelWallpaperTime) {
-        case 30:  roller_index = 0; break;
-        case 60:  roller_index = 1; break;
-        case 120: roller_index = 2; break;
-        case 300: roller_index = 3; break;
-        case 600: roller_index = 4; break;
-        default:
-            ESP_LOGW(TAG, "Invalid panelWallpaperTime: %d, setting default to 30s", panelWallpaperTime);
-            roller_index = 0;  // Default to first option
-            break;
-    }
-
-    // Set roller selection
-    lv_roller_set_selected(ui_rlrTime, roller_index, LV_ANIM_OFF);
-
-    // Log applied settings
-    ESP_LOGI(TAG, " ############################Applied Theme Settings:panelThemeType = %d panelWallpaperEnable=%d, WallpaperTimeIndex=%d",panelThemeType, panelWallpaperEnable, roller_index);
 }
 
 
@@ -1873,6 +1941,166 @@ void apply_theme_settings()
 }
 //######################################################################################################################
 
+// Function to initialize dim widgets visibility based on numOfDims
+void initialize_dim_widgets_visibility(void)
+{
+    // Check if UI objects are valid before accessing them
+    if (ui_slDim1 == NULL || ui_slDim2 == NULL || ui_slDim3 == NULL || ui_slDim4 == NULL ||
+        ui_lblDim1 == NULL || ui_lblDim2 == NULL || ui_lblDim3 == NULL || ui_lblDim4 == NULL) {
+        ESP_LOGW(TAG, "Dim widgets not yet initialized, skipping visibility setup");
+        return;
+    }
+    
+    // Hide all dim widgets first
+    lv_obj_add_flag(ui_slDim1, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_flag(ui_slDim2, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_flag(ui_slDim3, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_flag(ui_slDim4, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_flag(ui_lblDim1, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_flag(ui_lblDim2, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_flag(ui_lblDim3, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_flag(ui_lblDim4, LV_OBJ_FLAG_HIDDEN);
+    
+    // Unhide only the number of dims specified by numOfDims and add event callbacks
+    if (numOfDims >= 1) {
+        lv_obj_clear_flag(ui_slDim1, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_clear_flag(ui_lblDim1, LV_OBJ_FLAG_HIDDEN);
+        lv_label_set_text_fmt(ui_lblDim1, "%s:", lblBtnNames[dimsBuffer[0] - 1]);
+        lv_obj_add_event_cb(ui_slDim1, dim_events, LV_EVENT_RELEASED, (void*)0);
+    }
+    if (numOfDims >= 2) {
+        lv_obj_clear_flag(ui_slDim2, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_clear_flag(ui_lblDim2, LV_OBJ_FLAG_HIDDEN);
+        lv_label_set_text_fmt(ui_lblDim2, "%s:", lblBtnNames[dimsBuffer[1] - 1]);
+        lv_obj_add_event_cb(ui_slDim2, dim_events, LV_EVENT_RELEASED, (void*)1);
+    }
+    if (numOfDims >= 3) {
+        lv_obj_clear_flag(ui_slDim3, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_clear_flag(ui_lblDim3, LV_OBJ_FLAG_HIDDEN);
+        lv_label_set_text_fmt(ui_lblDim3, "%s:", lblBtnNames[dimsBuffer[2] - 1]);
+        lv_obj_add_event_cb(ui_slDim3, dim_events, LV_EVENT_RELEASED, (void*)2);
+    }
+    if (numOfDims >= 4) {
+        lv_obj_clear_flag(ui_slDim4, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_clear_flag(ui_lblDim4, LV_OBJ_FLAG_HIDDEN);
+        lv_label_set_text_fmt(ui_lblDim4, "%s:", lblBtnNames[dimsBuffer[3] - 1]);
+        lv_obj_add_event_cb(ui_slDim4, dim_events, LV_EVENT_RELEASED, (void*)3);
+    }
+    
+    ESP_LOGI(TAG, "Initialized %d dim widgets visibility", numOfDims);
+}
+
+// Function to create output buttons on main screen
+void create_output_buttons_on_screen(void)
+{
+    // Clear any existing output buttons first
+    for (int i = 0; i < numOfOutputs; i++) {
+        if (btnIO[i] != NULL) {
+            lv_obj_del(btnIO[i]);
+            btnIO[i] = NULL;
+        }
+        if (lblIO[i] != NULL) {
+            lblIO[i] = NULL;
+        }
+        if (imgIO[i] != NULL) {
+            imgIO[i] = NULL;
+        }
+    }
+    
+    // Create buttons on scrMain screen
+    create_buttons_for_screen(ui_scrMain, "main");
+}
+
+// Function to create buttons for main screen
+void create_buttons_for_screen(lv_obj_t* parent, const char* screen_type)
+{
+    // Use exact design for main screen
+    int btn_width = 100;
+    int btn_height = 90;
+    int btn_x_offset = 106; // btn_width + 6 for spacing
+    int btn_y_offset = 96;  // btn_height + 6 for spacing
+    int x_start = 53;       // Start position for first column (right side)
+    int y_start = -150;     // Start position for first row
+    
+    // Adjust button size and spacing if numOfOutputs is greater than 8
+    if (numOfOutputs > 8) {
+        btn_width = 105;
+        btn_height = 95;
+        btn_x_offset = 106; // btn_width + 1 for spacing
+        btn_y_offset = 96; // btn_height + 1 for spacing
+        y_start = -150;
+    }
+
+    for (int i = 0; i < numOfOutputs; i++) {
+        int row = i / 4;
+        int col = i % 4;
+
+        btnIO[i] = lv_btn_create(parent);
+        lv_obj_set_width(btnIO[i], btn_width);
+        lv_obj_set_height(btnIO[i], btn_height);
+        lv_obj_set_x(btnIO[i], x_start + col * btn_x_offset);
+        lv_obj_set_y(btnIO[i], y_start + row * btn_y_offset);
+        lv_obj_set_align(btnIO[i], LV_ALIGN_CENTER);
+        lv_obj_add_flag(btnIO[i], LV_OBJ_FLAG_SCROLL_ON_FOCUS);     /// Flags
+        lv_obj_clear_flag(btnIO[i], LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+        lv_obj_set_style_radius(btnIO[i], 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_bg_color(btnIO[i], lv_color_hex(0x5A5A5A), LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_bg_opa(btnIO[i], 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+        lblIO[i] = lv_label_create(btnIO[i]);
+        lv_obj_set_width(lblIO[i], LV_SIZE_CONTENT);   /// 1
+        lv_obj_set_height(lblIO[i], LV_SIZE_CONTENT);    /// 1
+        lv_obj_set_x(lblIO[i], 0);
+
+        if (numOfOutputs > 8) {
+            lv_obj_set_align(lblIO[i], LV_ALIGN_BOTTOM_MID);
+            lv_obj_set_y(lblIO[i], btn_height / 2 - 35); // Adjust y position to align at the bottom mid
+        }
+        else {
+            lv_obj_set_y(lblIO[i], 0); // Adjust y position to align at the bottom mid
+            lv_obj_set_align(lblIO[i], LV_ALIGN_CENTER);
+        }
+        lv_obj_set_align(lblIO[i], LV_ALIGN_BOTTOM_MID);
+        lv_label_set_text(lblIO[i], lblBtnNames[outputsBuffer[i] - 1]);
+        lv_obj_set_style_text_color(lblIO[i], lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_text_opa(lblIO[i], 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_text_font(lblIO[i], &lv_font_montserrat_18, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+        imgIO[i] = lv_img_create(btnIO[i]);
+        lv_img_set_src(imgIO[i], get_image_for_button(outputsBuffer[i] - 1));
+        lv_obj_set_width(imgIO[i], LV_SIZE_CONTENT);   /// 1
+        lv_obj_set_height(imgIO[i], LV_SIZE_CONTENT);    /// 1
+        lv_obj_set_x(imgIO[i], 0);
+        lv_obj_set_y(imgIO[i], 5);
+        if(numOfOutputs > 8) {
+            lv_obj_set_align(imgIO[i], LV_ALIGN_TOP_MID);
+        }
+        else {
+            lv_obj_set_align(imgIO[i], LV_ALIGN_CENTER);
+        }
+        
+        lv_obj_add_flag(imgIO[i], LV_OBJ_FLAG_ADV_HITTEST);     /// Flags
+        lv_obj_clear_flag(imgIO[i], LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+        
+        // Add event callback for button click
+        lv_obj_add_event_cb(btnIO[i], button_events, LV_EVENT_CLICKED, (void*)i);
+    }
+}
+
+
+// Function to start the communication animation timer
+void start_comm_animation_timer(void) {
+    if (comm_animation_timer != NULL) {
+        lv_timer_resume(comm_animation_timer);
+    }
+}
+
+// Function to stop the communication animation timer
+void stop_comm_animation_timer(void) {
+    if (comm_animation_timer != NULL) {
+        lv_timer_pause(comm_animation_timer);
+    }
+}
 
 
 //###################################### Display Manager ################################################################
