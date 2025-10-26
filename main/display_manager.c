@@ -326,7 +326,7 @@ static SemaphoreHandle_t lvgl_mux = NULL;
 static lv_timer_t * comm_animation_timer = NULL;
 
 // Forward declaration for animation function
-void commScreen_Animation(lv_obj_t * TargetObject, int delay);
+
 
 // Custom opacity animation callback
 static void set_opacity_cb(void * var, int32_t val) {
@@ -401,7 +401,7 @@ cJSON* notifications = NULL;
 int outputsBuffer[16] = {0};
 int sensorsBuffer[5] = {0};
 int dimsBuffer[4] = {0};
-int rgbBuffer[3] = {0};
+int rgbBuffer[4] = {0};
 int btn_index = 0;
 uint8_t rgbEna = 0; // RGB LED enable variable
 
@@ -567,7 +567,6 @@ void my_btnThemeWhiteFunc(void)
     lv_obj_set_style_text_color(ui_Checkbox3, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_color(ui_Checkbox4, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_color(ui_Checkbox5, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_color(ui_Checkbox6, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
 
     lv_obj_set_style_text_color(ui_lblPnlGrup1Sicaklik1, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_color(ui_lblPnlGrup1Sicaklik2, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -785,8 +784,8 @@ void dim_events(lv_event_t* e) {
 // Function to create the UI dynamically based on numOfOutputs
 void create_dynamic_ui(lv_obj_t* parent) {
 
-    int btn_width = 105;
-    int btn_height = 190;
+    int btn_width = 100;
+    int btn_height = 150;
     int btn_x_offset = 106; // btn_width + 1 for spacing
     int btn_y_offset = 191; // btn_height + 1 for spacing
     int x_start = 14;
@@ -802,8 +801,8 @@ void create_dynamic_ui(lv_obj_t* parent) {
 
     // Adjust button size and spacing if numOfOutputs is greater than 8
     if (numOfOutputs > 8) {
-        btn_width = 105;
-        btn_height = 95;
+        btn_width = 100;
+        btn_height = 90;
         btn_x_offset = 106; // btn_width + 1 for spacing
         btn_y_offset = 96; // btn_height + 1 for spacing
         y_start = -150;
@@ -822,7 +821,7 @@ void create_dynamic_ui(lv_obj_t* parent) {
         lv_obj_set_align(btnIO[i], LV_ALIGN_CENTER);
         lv_obj_add_flag(btnIO[i], LV_OBJ_FLAG_SCROLL_ON_FOCUS);     /// Flags
         lv_obj_clear_flag(btnIO[i], LV_OBJ_FLAG_SCROLLABLE);      /// Flags
-        lv_obj_set_style_radius(btnIO[i], 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_radius(btnIO[i], 10, LV_PART_MAIN | LV_STATE_DEFAULT);
         lv_obj_set_style_bg_color(btnIO[i], lv_color_hex(0x5A5A5A), LV_PART_MAIN | LV_STATE_DEFAULT);
         lv_obj_set_style_bg_opa(btnIO[i], 255, LV_PART_MAIN | LV_STATE_DEFAULT);
 
@@ -867,22 +866,17 @@ void create_dynamic_ui(lv_obj_t* parent) {
 
 
         for (int i = 0; i < numOfDims; i++) {
-        // Create the slider
-        sldDims[i] = lv_slider_create(ui_pnlSensors);
-        //lv_slider_set_value(sldDims[i], dimsBuffer[i], LV_ANIM_OFF);
-        if (lv_slider_get_mode(sldDims[i]) == LV_SLIDER_MODE_RANGE) {
-            lv_slider_set_left_value(sldDims[i], 0, LV_ANIM_OFF);
-        }
+        // Create the bar
+        sldDims[i] = lv_bar_create(ui_pnlSensors);
+        lv_bar_set_value(sldDims[i], 0, LV_ANIM_OFF);
         lv_obj_set_width(sldDims[i], 305);
         lv_obj_set_height(sldDims[i], 14);
         lv_obj_set_x(sldDims[i], -6);
         lv_obj_set_y(sldDims[i], -56 + i * 40); // Adjust y position dynamically
         lv_obj_set_align(sldDims[i], LV_ALIGN_CENTER);
 
-        lv_obj_set_style_pad_left(sldDims[i], 15, LV_PART_KNOB | LV_STATE_PRESSED);
-        lv_obj_set_style_pad_right(sldDims[i], 15, LV_PART_KNOB | LV_STATE_PRESSED);
-        lv_obj_set_style_pad_top(sldDims[i], 15, LV_PART_KNOB | LV_STATE_PRESSED);
-        lv_obj_set_style_pad_bottom(sldDims[i], 15, LV_PART_KNOB | LV_STATE_PRESSED);
+        // Make bar non-clickable
+        lv_obj_clear_flag(sldDims[i], LV_OBJ_FLAG_CLICKABLE);
 
         lv_obj_add_event_cb(sldDims[i], dim_events, LV_EVENT_RELEASED, (void*)i);
 
@@ -1257,12 +1251,26 @@ void update_display_with_data(const uint8_t *data, int length) {
         create_dynamic_ui(ui_scrMain);
         ui_initialized = 3;
     }
-    if (ui_initialized > 3 && Deviceconnected) {
+    if (ui_initialized > 3 /*&& Deviceconnected*/) {
         for (int i = 0; i < numOfOutputs; i++) {
-            set_button_color(btnIO[i], (get_outputs() >> i)&0x01, Deviceconnected);
+            set_button_color(btnIO[i], (get_outputs() >> i)&0x01, 1/*Deviceconnected*/);
         }
         for (int i = 0; i < numOfDims; i++) {
-            //lv_slider_set_value(sldDims[i], get_dimmable_output(i), LV_ANIM_OFF);
+            lv_slider_set_value(sldDims[i], get_dimmable_output(i), LV_ANIM_OFF);
+        }
+        /*if(rgbEna == 1)*/ {
+            apply_rgb_data_to_wheel(get_rgb_value(0), get_rgb_value(1), get_rgb_value(2));
+            // if(rgbEna == 1) {
+            //     lv_obj_set_state(ui_swRGBTurnONOFF, LV_STATE_CHECKED);
+            //     lv_obj_add_flag(ui_Colorwheel1, LV_OBJ_FLAG_CLICKABLE);
+
+            // }
+            // else
+            // {
+            //     lv_obj_set_state(ui_swRGBTurnONOFF, LV_STATE_UNCHECKED);
+            //     lv_obj_clear_flag(ui_Colorwheel1, LV_OBJ_FLAG_CLICKABLE);
+            // }
+               
         }
     }
     ui_initialized++;
@@ -1283,25 +1291,25 @@ char* create_json_data_packet(const uint16_t* regs_data, int numOfOutputs, int n
 
     // Add number of outputs, dims, sensors, slave connection status, and theme type to the JSON object
     cJSON_AddStringToObject(json, "slvConn", slaveConnectionStatus ? "Yes" : "No");
-    cJSON_AddNumberToObject(json, "numOfOutputs", numOfOutputs);
-    cJSON_AddNumberToObject(json, "numOfDims", numOfDims);
-    cJSON_AddNumberToObject(json, "numOfSensors", numOfSensors);
-    cJSON_AddStringToObject(json, "RGBEnabled", "yes");
-    cJSON_AddNumberToObject(json, "Theme", themeType);
+    cJSON_AddNumberToObject(json, "numOfO", numOfOutputs);
+    cJSON_AddNumberToObject(json, "numOfD", numOfDims);
+    cJSON_AddNumberToObject(json, "numOfS", numOfSensors);
+    cJSON_AddStringToObject(json, "RGBE", "yes");
+    cJSON_AddNumberToObject(json, "Th", themeType);
     cJSON_AddNumberToObject(json, "volt", batarya_volt);
 
 
     // Add outputsBuffer to the JSON object
     cJSON *outputnames = cJSON_CreateIntArray(outputsBuffer, numOfOutputs);
-    cJSON_AddItemToObject(json, "outputsNameBuffer", outputnames);
+    cJSON_AddItemToObject(json, "outNB", outputnames);
 
     // Add dimsBuffer to the JSON object
     cJSON *dimnames = cJSON_CreateIntArray(dimsBuffer, numOfDims);
-    cJSON_AddItemToObject(json, "DimsNameBuffer", dimnames);
+    cJSON_AddItemToObject(json, "dimNB", dimnames);
 
     // Add sensorsBuffer to the JSON object
     cJSON *sensornames = cJSON_CreateIntArray(sensorsBuffer, 5);
-    cJSON_AddItemToObject(json, "SensorsEnabledBuffer", sensornames);
+    cJSON_AddItemToObject(json, "senNB", sensornames);
 
 
     // Fetch outputsBuffer from regs_data
@@ -1310,14 +1318,14 @@ char* create_json_data_packet(const uint16_t* regs_data, int numOfOutputs, int n
         buf[i] = get_outputs() >> i & 0x01; // Get the output state from the bitmask
     }
     cJSON *outputs = cJSON_CreateIntArray(buf, numOfOutputs);
-    cJSON_AddItemToObject(json, "outputsDataBuffer", outputs);
+    cJSON_AddItemToObject(json, "outDB", outputs);
 
     // Fetch dimsBuffer from regs_data
     for (int i = 0; i < numOfDims; i++) {
         buf[i] = get_dimmable_output(i);
     }
     cJSON *dims = cJSON_CreateIntArray(buf, numOfDims);
-    cJSON_AddItemToObject(json, "DimsDataBuffer", dims);
+    cJSON_AddItemToObject(json, "dDB", dims);
 
 
     // Fetch sensorsBuffer from regs_data
@@ -1325,16 +1333,17 @@ char* create_json_data_packet(const uint16_t* regs_data, int numOfOutputs, int n
         buf[i] = get_analog_input(i);
     }
     cJSON *sensors = cJSON_CreateIntArray(buf, numOfSensors);
-    cJSON_AddItemToObject(json, "SensorsDataBuffer", sensors);
+    cJSON_AddItemToObject(json, "sDB", sensors);
 
 
     rgbBuffer[0] = get_rgb_value(0);
     rgbBuffer[1] = get_rgb_value(1);
     rgbBuffer[2] = get_rgb_value(2);
-    ESP_LOGI(TAG, "RGB Values: %d, %d, %d", get_rgb_value(0), get_rgb_value(1), get_rgb_value(2));
+    rgbBuffer[3] = get_rgb_value(3);
+    //ESP_LOGI(TAG, "RGB Values: %d, %d, %d", get_rgb_value(0), get_rgb_value(1), get_rgb_value(2));
     // Add rgbBuffer to the JSON object
-    cJSON *rgb = cJSON_CreateIntArray(rgbBuffer, 3);
-    cJSON_AddItemToObject(json, "RGBDataBuffer", rgb);
+    cJSON *rgb = cJSON_CreateIntArray(rgbBuffer, 4);
+    cJSON_AddItemToObject(json, "RGBDB", rgb);
     
 
 
@@ -1508,7 +1517,8 @@ void parse_write_data(cJSON* json) {
                 can_data[0] = (uint8_t)cJSON_GetArrayItem(rgbArray, 0)->valueint; // Red
                 can_data[1] = (uint8_t)cJSON_GetArrayItem(rgbArray, 1)->valueint; // Green
                 can_data[2] = (uint8_t)cJSON_GetArrayItem(rgbArray, 2)->valueint; // Blue
-                ESP_LOGI("PARSE_WRITE_DATA", "RGB Values: R=%d, G=%d, B=%d", can_data[0], can_data[1], can_data[2]);
+                can_data[3] = (uint8_t)cJSON_GetArrayItem(rgbArray, 3)->valueint; // RgbEnable
+                ESP_LOGI("PARSE_WRITE_DATA", "RGB Values: R=%d, G=%d, B=%d rgbEna = %d", can_data[0], can_data[1], can_data[2], can_data[3]);
                 send_can_frame(0x740, can_data);  // RGB için CAN ID: 0x740
             } else {
                 ESP_LOGE("PARSE_WRITE_DATA", "RGB writeData must be an array of 3 values.");
@@ -1529,6 +1539,14 @@ void set_rgb_to_white() {
     send_can_frame(0x740, can_data);  // RGB için CAN ID: 0x740
 }
 
+// Timer callback for BLE-triggered restart
+static void ble_restart_timer_callback(lv_timer_t * timer)
+{
+    ESP_LOGI("BLE_RESTART", "BLE restart timer callback called");
+    save_panel_settings(); // Show restart panel
+    ESP_LOGI("BLE_RESTART", "save_panel_settings() called");
+    lv_timer_del(timer); // Delete the timer after use
+}
 
 // Function to parse Configuration data
 void parse_configuration_data(cJSON* json) {
@@ -1595,6 +1613,19 @@ void parse_configuration_data(cJSON* json) {
     }
 
     save_panel_configuration_to_nvs(numOfOutputs->valueint, outputsBuf, numOfSensors->valueint, sensorsBuf, numOfDims->valueint, dimsBuf);
+
+
+        ESP_LOGI("BLE_CONFIG", "Creating restart timer for BLE configuration");
+    // Create a one-shot timer to show restart panel in LVGL task context
+    lv_timer_t * restart_timer = lv_timer_create(ble_restart_timer_callback, 100, NULL);
+    if (restart_timer == NULL) {
+        ESP_LOGE("BLE_CONFIG", "Failed to create restart timer!");
+    } else {
+        lv_timer_set_repeat_count(restart_timer, 1); // Run only once
+        ESP_LOGI("BLE_CONFIG", "Restart timer created successfully");
+    }
+
+
 }
 // Function to parse Rules data
 void parse_rules_data(cJSON* json) {
@@ -1865,10 +1896,13 @@ void check_sensors_and_update_buffer() {
 }
 
 int SaveConfigsCounter = 0; // Counter for save configs bar
+lv_obj_t* current_progress_bar = NULL; // Global reference to the current progress bar
 static void save_configsbar_timer(lv_timer_t * timer)
 {
-    lv_bar_set_value(ui_pbSaveConfigs, SaveConfigsCounter, LV_ANIM_OFF);  // 0 → 100 in steps of 10
-    SaveConfigsCounter += 10; // Increment the counter by 10
+    if (current_progress_bar != NULL) {
+        lv_bar_set_value(current_progress_bar, SaveConfigsCounter, LV_ANIM_OFF);  // 0 → 100 in steps of 3
+    }
+    SaveConfigsCounter += 3; // Increment the counter by 3
     if(SaveConfigsCounter >= 100) {
         check_switches_and_get_dropdown_values();
         check_sensors_and_update_buffer();
@@ -1882,9 +1916,73 @@ static void save_configsbar_timer(lv_timer_t * timer)
 
 void save_panel_settings()
 {
-    lv_obj_clear_flag(ui_pnlSaveConfigs, LV_OBJ_FLAG_HIDDEN);     /// Flags
-    lv_obj_move_foreground(ui_pnlSaveConfigs);
+    
+    // Create restart panel as overlay on current screen
+    lv_obj_t * current_screen = lv_scr_act();
+    if (current_screen == NULL) {
+        ESP_LOGE("SAVE_PANEL", "No active screen!");
+        return;
+    }
+    
+    ESP_LOGI("SAVE_PANEL", "Creating restart panel overlay on current screen");
+    
+    // Create the restart panel as a child of the current screen
+    lv_obj_t * restart_panel = lv_obj_create(current_screen);
+    lv_obj_set_width(restart_panel, 545);
+    lv_obj_set_height(restart_panel, 125);
+    lv_obj_set_align(restart_panel, LV_ALIGN_CENTER);
+    lv_obj_clear_flag(restart_panel, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_bg_color(restart_panel, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(restart_panel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_color(restart_panel, lv_color_hex(0xFF0000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_opa(restart_panel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_shadow_color(restart_panel, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_shadow_opa(restart_panel, 50, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_shadow_width(restart_panel, 1, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_shadow_spread(restart_panel, 1, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_shadow_ofs_x(restart_panel, 5, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_shadow_ofs_y(restart_panel, 5, LV_PART_MAIN | LV_STATE_DEFAULT);
+    
+    // Create the text labels
+    lv_obj_t * label1 = lv_label_create(restart_panel);
+    lv_obj_set_align(label1, LV_ALIGN_TOP_MID);
+    lv_obj_set_y(label1, -20);
+    lv_label_set_text(label1, "Device will restart");
+    lv_obj_set_style_text_color(label1, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(label1, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(label1, &lv_font_montserrat_22, LV_PART_MAIN | LV_STATE_DEFAULT);
+    
+    lv_obj_t * label2 = lv_label_create(restart_panel);
+    lv_obj_set_align(label2, LV_ALIGN_CENTER);
+    lv_label_set_text(label2, "Please wait...");
+    lv_obj_set_style_text_color(label2, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(label2, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(label2, &lv_font_montserrat_22, LV_PART_MAIN | LV_STATE_DEFAULT);
+    
+    // Create progress bar
+    lv_obj_t * progress_bar = lv_bar_create(restart_panel);
+    lv_obj_set_width(progress_bar, 173);
+    lv_obj_set_height(progress_bar, 10);
+    lv_obj_set_align(progress_bar, LV_ALIGN_BOTTOM_MID);
+    lv_obj_set_y(progress_bar, -10);
+    lv_bar_set_range(progress_bar, 0, 100);
+    lv_bar_set_value(progress_bar, 0, LV_ANIM_OFF);
+    
+    // Set the global progress bar reference for the timer
+    current_progress_bar = progress_bar;
+    
+    // Reset counter for new restart
+    SaveConfigsCounter = 0;
+    
+    // Move panel to foreground
+    lv_obj_move_foreground(restart_panel);
+    
+    // Force LVGL to refresh the display
+    lv_refr_now(NULL);
+    
+    // Create timer with the new progress bar
     lv_timer_t * initTim = lv_timer_create(save_configsbar_timer, 100, NULL);
+    ESP_LOGI("SAVE_PANEL", "Restart panel overlay created and visible");
 
 }
 

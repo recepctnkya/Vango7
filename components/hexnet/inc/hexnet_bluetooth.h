@@ -25,6 +25,7 @@
 #include "esp_bt_main.h"
 #include "esp_bt_device.h"
 #include "esp_gatt_common_api.h"
+#include "esp_timer.h"
 
 #define GATTS_TABLE_TAG  "HEXNET_BLE"
 
@@ -83,6 +84,7 @@ void ble_init(void);
 static uint8_t find_char_and_desr_index(uint16_t handle);
 static bool store_wr_buffer(esp_ble_gatts_cb_param_t *p_data);
 static void free_write_buffer(void);
+static void process_complete_data(void);
 bool get_connection_status();
 void set_converted_json_data(char* converted_json_data);
 uint8_t* get_spp_cmd_buff();

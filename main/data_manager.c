@@ -23,7 +23,6 @@
 #include "display_manager.h"
 #include "modbus_params.h"
 #include "mbcontroller.h"
-#include "display_manager.h"
 
 
 #define MAX_INPUTS 20

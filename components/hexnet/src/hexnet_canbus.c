@@ -85,7 +85,7 @@ uint8_t get_dimmable_output(uint8_t index) {
 }
 
 uint8_t get_rgb_value(uint8_t index) {
-    if (index < 3) {
+    if (index < 4) {
         return rgb_values[index];
     }
     return 0;  // Hatalı index
@@ -213,15 +213,41 @@ void send_can_frame(uint32_t id, uint8_t *data) {
     message.data_length_code = 8;  // Max CAN data length is 8 bytes
     memcpy(message.data, data, 8);
 
-    // Send the message over the CAN bus
-    esp_err_t res = twai_transmit(&message, pdMS_TO_TICKS(100));  // 100 ms timeout
-    if (res != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to send frame ID: 0x%03X, error: 0x%x", (unsigned int)id, res);
-        // Check if we need to recover from errors
-        check_and_recover_from_errors();
-    } else {
-        last_successful_tx = esp_timer_get_time() / 1000; // Update successful TX timestamp
+    if (id == 0x720)
+    {
+        if (data[1] == 1) {
+            outputs |= (1 << data[0]);  // set bit at index
+            ESP_LOGI(TAG, "Output %d set to 1", data[0]);
+        } else {
+            outputs &= ~(1 << data[0]); // clear bit at index
+            ESP_LOGI(TAG, "Output %d set to 0", data[0]);
+        }
     }
+    else if (id == 0x730)
+    {
+        uint8_t index = data[0];
+        uint8_t val = data[1];
+        dimmable_outputs[index] = val;
+    }
+    else if (id == 0x740)
+    {
+        rgb_values[0] = data[0];
+        rgb_values[1] = data[1];
+        rgb_values[2] = data[2];
+        rgb_enabled = data[3]; // Update RGB enable flag
+    }
+    
+    
+
+    // Send the message over the CAN bus
+    // esp_err_t res = twai_transmit(&message, pdMS_TO_TICKS(100));  // 100 ms timeout
+    // if (res != ESP_OK) {
+    //     ESP_LOGE(TAG, "Failed to send frame ID: 0x%03X, error: 0x%x", (unsigned int)id, res);
+    //     // Check if we need to recover from errors
+    //     check_and_recover_from_errors();
+    // } else {
+    //     last_successful_tx = esp_timer_get_time() / 1000; // Update successful TX timestamp
+    // }
 }
 
 void handle_rx_message(twai_message_t message) {
