@@ -52,7 +52,7 @@ uint16_t outputs = 0;
 uint16_t inputs = 0;
 uint8_t analog_inputs[5] = {0};
 uint8_t dimmable_outputs[4] = {0};
-uint8_t rgb_values[3] = {0};
+uint8_t rgb_values[4] = {0};
 uint8_t rgb_enabled = 0; // RGB'nin aktif olup olmadığını tutar
 uint8_t canbusConnection = 0;
 
@@ -234,7 +234,7 @@ void send_can_frame(uint32_t id, uint8_t *data) {
         rgb_values[0] = data[0];
         rgb_values[1] = data[1];
         rgb_values[2] = data[2];
-        rgb_enabled = data[3]; // Update RGB enable flag
+        rgb_values[3] = data[3]; // Update RGB enable flag
     }
     
     

@@ -404,7 +404,7 @@ int dimsBuffer[4] = {0};
 int rgbBuffer[4] = {0};
 int btn_index = 0;
 uint8_t rgbEna = 0; // RGB LED enable variable
-
+uint8_t fromBleConfig = 0;
 int panelWallpaperEnableCounter = 1;
 
 
@@ -416,6 +416,7 @@ void parse_rules_data(cJSON* json);
 char* create_json_data_packet(const uint16_t* regs_data, int numOfOutputs, int numOfDims, int numOfSensors, bool slaveConnectionStatus, int themeType, int numberOfNotifications, cJSON* notifications);
 void parse_ble_data(const char* json_data);
 void create_buttons_for_screen(lv_obj_t* parent, const char* screen_type);
+
 
 //###############################   LVGL FUNCTIONS   ##########################################
 static bool example_on_vsync_event(esp_lcd_panel_handle_t panel, const esp_lcd_rgb_panel_event_data_t *event_data, void *user_data)
@@ -1258,21 +1259,21 @@ void update_display_with_data(const uint8_t *data, int length) {
         for (int i = 0; i < numOfDims; i++) {
             lv_slider_set_value(sldDims[i], get_dimmable_output(i), LV_ANIM_OFF);
         }
-        /*if(rgbEna == 1)*/ {
+ 
+        
+        if(rgbEna == 1) {
+            lv_obj_add_state(ui_swRGBTurnON, LV_STATE_CHECKED);
+            lv_obj_add_flag(ui_Colorwheel1, LV_OBJ_FLAG_CLICKABLE);
             apply_rgb_data_to_wheel(get_rgb_value(0), get_rgb_value(1), get_rgb_value(2));
-            // if(rgbEna == 1) {
-            //     lv_obj_set_state(ui_swRGBTurnONOFF, LV_STATE_CHECKED);
-            //     lv_obj_add_flag(ui_Colorwheel1, LV_OBJ_FLAG_CLICKABLE);
 
-            // }
-            // else
-            // {
-            //     lv_obj_set_state(ui_swRGBTurnONOFF, LV_STATE_UNCHECKED);
-            //     lv_obj_clear_flag(ui_Colorwheel1, LV_OBJ_FLAG_CLICKABLE);
-            // }
-               
         }
-    }
+        else
+        {
+            lv_obj_clear_state(ui_swRGBTurnON, LV_STATE_CHECKED);
+            lv_obj_clear_flag(ui_Colorwheel1, LV_OBJ_FLAG_CLICKABLE);
+        }
+            
+        }
     ui_initialized++;
 }
 
@@ -1340,7 +1341,7 @@ char* create_json_data_packet(const uint16_t* regs_data, int numOfOutputs, int n
     rgbBuffer[1] = get_rgb_value(1);
     rgbBuffer[2] = get_rgb_value(2);
     rgbBuffer[3] = get_rgb_value(3);
-    //ESP_LOGI(TAG, "RGB Values: %d, %d, %d", get_rgb_value(0), get_rgb_value(1), get_rgb_value(2));
+    //ESP_LOGI(TAG, "RGB Values: %d, %d, %d, %d", get_rgb_value(0), get_rgb_value(1), get_rgb_value(2), get_rgb_value(3));
     // Add rgbBuffer to the JSON object
     cJSON *rgb = cJSON_CreateIntArray(rgbBuffer, 4);
     cJSON_AddItemToObject(json, "RGBDB", rgb);
@@ -1351,7 +1352,7 @@ char* create_json_data_packet(const uint16_t* regs_data, int numOfOutputs, int n
 
     // Convert JSON object to string
     char *json_str = cJSON_PrintUnformatted(json);
-    ESP_LOGI("JSON_DATA_PACKET", "%s", json_str);
+    //ESP_LOGI("JSON_DATA_PACKET", "%s", json_str);
 
     // Free the JSON object
     cJSON_Delete(json);
@@ -1513,7 +1514,7 @@ void parse_write_data(cJSON* json) {
             }
         } else if (strcmp(writeDataType->valuestring, "RGB") == 0) {
             cJSON* rgbArray = cJSON_GetObjectItem(json, "writeData");
-            if (rgbArray && cJSON_IsArray(rgbArray) && cJSON_GetArraySize(rgbArray) == 3) {
+            if (rgbArray && cJSON_IsArray(rgbArray) && cJSON_GetArraySize(rgbArray) == 4) {
                 can_data[0] = (uint8_t)cJSON_GetArrayItem(rgbArray, 0)->valueint; // Red
                 can_data[1] = (uint8_t)cJSON_GetArrayItem(rgbArray, 1)->valueint; // Green
                 can_data[2] = (uint8_t)cJSON_GetArrayItem(rgbArray, 2)->valueint; // Blue
@@ -1521,7 +1522,7 @@ void parse_write_data(cJSON* json) {
                 ESP_LOGI("PARSE_WRITE_DATA", "RGB Values: R=%d, G=%d, B=%d rgbEna = %d", can_data[0], can_data[1], can_data[2], can_data[3]);
                 send_can_frame(0x740, can_data);  // RGB için CAN ID: 0x740
             } else {
-                ESP_LOGE("PARSE_WRITE_DATA", "RGB writeData must be an array of 3 values.");
+                ESP_LOGE("PARSE_WRITE_DATA", "RGB writeData must be an array of 4 values.");
             }
         } else {
             ESP_LOGI("PARSE_WRITE_DATA", "Unknown writeDataType: %s", writeDataType->valuestring);
@@ -1532,9 +1533,9 @@ void parse_write_data(cJSON* json) {
 void set_rgb_to_white() {
     uint8_t can_data[8] = {0}; // CAN verisi için buffer
     // Set RGB values to white
-    can_data[0] = 255; // Red
-    can_data[1] = 255; // Green
-    can_data[2] = 255; // Blue
+    can_data[0] = 0x5A; // Red
+    can_data[1] = 0x5A; // Green
+    can_data[2] = 0x5A; // Blue
     can_data[3] = rgbEna;   // Unused byte
     send_can_frame(0x740, can_data);  // RGB için CAN ID: 0x740
 }
@@ -1543,7 +1544,7 @@ void set_rgb_to_white() {
 static void ble_restart_timer_callback(lv_timer_t * timer)
 {
     ESP_LOGI("BLE_RESTART", "BLE restart timer callback called");
-    save_panel_settings(); // Show restart panel
+    save_panel_settings();
     ESP_LOGI("BLE_RESTART", "save_panel_settings() called");
     lv_timer_del(timer); // Delete the timer after use
 }
@@ -1612,10 +1613,14 @@ void parse_configuration_data(cJSON* json) {
         ESP_LOGI("PARSE_CONFIGURATION_DATA", "Theme: %s", theme->valuestring);
     }
 
+
+
     save_panel_configuration_to_nvs(numOfOutputs->valueint, outputsBuf, numOfSensors->valueint, sensorsBuf, numOfDims->valueint, dimsBuf);
+    fromBleConfig = 1;
+    
 
 
-        ESP_LOGI("BLE_CONFIG", "Creating restart timer for BLE configuration");
+    ESP_LOGI("BLE_CONFIG", "Creating restart timer for BLE configuration");
     // Create a one-shot timer to show restart panel in LVGL task context
     lv_timer_t * restart_timer = lv_timer_create(ble_restart_timer_callback, 100, NULL);
     if (restart_timer == NULL) {
@@ -1680,6 +1685,7 @@ void save_panel_configuration_to_nvs(int totalOutps, int buffer1[16], int totalS
 
     // Save totalOutps to NVS
     nvs_write_int("numOfOutputs", totalOutps);
+    ESP_LOGW(TAG, "Total Outputs to save: %d", totalOutps);
 
     // Save buffer1 to NVS
     for (int i = 0; i < 16; i++) {
@@ -1693,6 +1699,7 @@ void save_panel_configuration_to_nvs(int totalOutps, int buffer1[16], int totalS
 
     // Save totalSensors to NVS
     nvs_write_int("numSens", totalSensors);
+    ESP_LOGW(TAG, "Total Sensors to save: %d", totalSensors);
 
     // Save buffer2 to NVS
     for (int i = 0; i < 5; i++) {
@@ -1706,6 +1713,7 @@ void save_panel_configuration_to_nvs(int totalOutps, int buffer1[16], int totalS
 
     // Save totalDims to NVS
     nvs_write_int("numDims", totalDims);
+    ESP_LOGW(TAG, "Total Dims to save: %d", totalDims);
 
     // Save buffer3 to NVS
     for (int i = 0; i < 4; i++) {
@@ -1714,8 +1722,9 @@ void save_panel_configuration_to_nvs(int totalOutps, int buffer1[16], int totalS
         }
         char key[16];
         snprintf(key, sizeof(key), "dimsBuf%d", i);
-        nvs_write_int(key, buffer3[i]);
+        nvs_write_int(key, buffer3[i]);        
     }
+    ESP_LOGI(TAG, "##### NVS Parameters Saved Successfully! #####");
 }
 
 void save_theme_configuration_to_nvs(int16_t* themeType, uint16_t* wallpaperEnabled, uint16_t* wallpaperTimeIndex){
@@ -1907,16 +1916,23 @@ static void save_configsbar_timer(lv_timer_t * timer)
         check_switches_and_get_dropdown_values();
         check_sensors_and_update_buffer();
         check_switches_and_get_dropdown_values_for_dims();
-        save_panel_configuration_to_nvs(numOfOutputs, outputsBuffer, numOfSensors, sensorsBuffer, numOfDims, dimsBuffer);
         // Save the panel settings to NVS
+        if(fromBleConfig == 1) {
+            ESP_LOGI(TAG, "##### Saving Panel Settings from BLE Configuration #####");
+            
+            fromBleConfig = 0; // Reset the flag
+        } else {
+            ESP_LOGI(TAG, "##### Saving Panel Settings from UI Configuration #####");
+            save_panel_configuration_to_nvs(numOfOutputs, outputsBuffer, numOfSensors, sensorsBuffer, numOfDims, dimsBuffer);
+        }
         ESP_LOGI(TAG, "##### Panel Settings Saved Successfully! #####");
         esp_restart();
     }
 }
 
+
 void save_panel_settings()
 {
-    
     // Create restart panel as overlay on current screen
     lv_obj_t * current_screen = lv_scr_act();
     if (current_screen == NULL) {
@@ -1983,7 +1999,6 @@ void save_panel_settings()
     // Create timer with the new progress bar
     lv_timer_t * initTim = lv_timer_create(save_configsbar_timer, 100, NULL);
     ESP_LOGI("SAVE_PANEL", "Restart panel overlay created and visible");
-
 }
 
 void save_theme_settings()
@@ -2031,9 +2046,7 @@ void apply_theme_settings()
     // Apply selected color to the panel background
     lv_obj_set_style_bg_color(ui_btnRGBColor, new_color, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_color(ui_btnRGBApply, new_color, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_colorwheel_set_rgb(ui_Colorwheel1, new_color);
 
-    //lv_colorwheel_set_rgb(ui_Colorwheel1, lv_color_make(255, 0, 0)); // Set to red
 
     
 }
